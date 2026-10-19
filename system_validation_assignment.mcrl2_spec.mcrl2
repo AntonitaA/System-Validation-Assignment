@@ -1,0 +1,617 @@
+% -----------------------------------------------------------------------------------------------------------------------
+%  DATA TYPES
+% -----------------------------------------------------------------------------------------------------------------------
+sort
+    Light        = struct off | green | red;
+    Tray         = struct t1 | t2 | t3;
+    TrayStatus   = struct empty | loaded | reducedWeight;
+
+    Order        = struct null | preparing | ready | pickedup | delivered;
+
+	Button 		 = struct emergency | go | service;
+	ButtonStatus = struct pressed | released;
+
+    MovingStatus = struct moving | stopped;
+    RWstatus = struct delivering | delivered | emergencyActive | emergencyResolved | blocked | blockedResolved ;
+
+    Position = struct idle | kitchen | table1 | table2 | table3 ;
+
+    Path = struct p1 | p2 | p3 | p4 | p5 | p6;
+
+    Route = struct
+        noRoute
+      | K1_direct | K1_T2 | K1_T3
+      | K2_direct | K2_T1 | K2_T3
+      | K3_direct | K3_T1 | K3_T2
+      | T12 | T13 | T21 | T23 | T31 | T32;
+
+% -----------------------------------------------------------------------------------------------------------------------
+% FUNCTIONS
+% -----------------------------------------------------------------------------------------------------------------------
+
+map isPWO: Path -> Bool;
+    routeCost: Route -> Nat;
+    routeIsWO: Route -> Bool; %A route is PWO if every path of this route is PWO.
+    isShortestRWO: Position # Position # Route -> Bool;
+    validRoute: Position # Position # Route -> Bool;
+    canLeave: Position # TrayStatus # TrayStatus # TrayStatus -> Bool;
+
+var
+    pos, pos2: Position;
+    route: Route;
+    s1, s2, s3: TrayStatus;
+
+eqn
+    %define the obstacle in p3.
+    isPWO(p1) = true;
+    isPWO(p2) = true;
+    isPWO(p3) = false;
+    isPWO(p4) = true;
+    isPWO(p5) = true;
+    isPWO(p6) = true;
+
+    %%we pre define the cost of every route
+    routeCost(noRoute) = 0;
+
+    %%routes for kitchen --> table 1
+    routeCost(K1_direct) = 12;
+    routeCost(K1_T2) = 19;
+    routeCost(K1_T3) = 30;
+
+    %routes for kitchen --> table 2
+    routeCost(K2_direct) = 14;
+    routeCost(K2_T1) = 17;
+    routeCost(K2_T3) = 25;
+
+    %%routes for kitchen --> table 3
+    routeCost(K3_direct) = 20;
+    routeCost(K3_T1) = 22;
+    routeCost(K3_T2) = 19;
+
+    %routes among tables
+    routeCost(T12) = 5;
+    routeCost(T13) = 10;
+    routeCost(T21) = 5;
+    routeCost(T23) = 5;
+    routeCost(T31) = 10;
+    routeCost(T32) = 5;
+
+    %a route is WO if every path in the route is PWO.
+    routeIsWO(noRoute) = false;
+
+    %for table1
+    routeIsWO(K1_direct) = isPWO(p1);
+    routeIsWO(K1_T2) = isPWO(p2) && isPWO(p5);
+    routeIsWO(K1_T3) = isPWO(p3) && isPWO(p6);
+    routeIsWO(T12) = isPWO(p5);
+    routeIsWO(T13) = isPWO(p6);
+
+    %for table2
+    routeIsWO(K2_direct) = isPWO(p2);
+    routeIsWO(K2_T1) = isPWO(p1) && isPWO(p5);
+    routeIsWO(K2_T3) = isPWO(p3) && isPWO(p4);
+    routeIsWO(T23) = isPWO(p4);
+    routeIsWO(T21) = isPWO(p5);
+
+    %%for table3
+    routeIsWO(K3_direct) = isPWO(p3);
+    routeIsWO(K3_T1) = isPWO(p1) && isPWO(p6);
+    routeIsWO(K3_T2) = isPWO(p2) && isPWO(p4);
+    routeIsWO(T32) = isPWO(p4);
+    routeIsWO(T31) = isPWO(p6);
+
+%%function that defines the valid routes among positions.
+    validRoute(pos, pos2, route) =
+
+        %% Kitchen <-> Table 1
+        (pos == kitchen && pos2 == table1 && route == K1_direct)
+        ||
+        (pos == kitchen && pos2 == table1 && route == K1_T2)
+        ||
+        (pos == kitchen && pos2 == table1 && route == K1_T3)
+
+        ||
+        (pos == table1 && pos2 == kitchen && route == K1_direct)
+        ||
+        (pos == table1 && pos2 == kitchen && route == K1_T2)
+        ||
+        (pos == table1 && pos2 == kitchen && route == K1_T3)
+
+        %% Kitchen <-> Table 2
+        ||
+        (pos == kitchen && pos2 == table2 && route == K2_direct)
+        ||
+        (pos == kitchen && pos2 == table2 && route == K2_T1)
+        ||
+        (pos == kitchen && pos2 == table2 && route == K2_T3)
+
+        ||
+        (pos == table2 && pos2 == kitchen && route == K2_direct)
+        ||
+        (pos == table2 && pos2 == kitchen && route == K2_T1)
+        ||
+        (pos == table2 && pos2 == kitchen && route == K2_T3)
+
+        %% Kitchen <-> Table 3
+        ||
+        (pos == kitchen && pos2 == table3 && route == K3_direct)
+        ||
+        (pos == kitchen && pos2 == table3 && route == K3_T1)
+        ||
+        (pos == kitchen && pos2 == table3 && route == K3_T2)
+
+        ||
+        (pos == table3 && pos2 == kitchen && route == K3_direct)
+        ||
+        (pos == table3 && pos2 == kitchen && route == K3_T1)
+        ||
+        (pos == table3 && pos2 == kitchen && route == K3_T2)
+
+        %% routes among tables
+        ||
+        (pos == table1 && pos2 == table2 && route == T12)
+        ||
+        (pos == table1 && pos2 == table3 && route == T13)
+        ||
+        (pos == table2 && pos2 == table1 && route == T21)
+        ||
+        (pos == table2 && pos2 == table3 && route == T23)
+        ||
+        (pos == table3 && pos2 == table1 && route == T31)
+        ||
+        (pos == table3 && pos2 == table2 && route == T32);
+
+%%  we dont define shortest routes between tables because there is only one possible route.
+    %%table 1
+    isShortestRWO(kitchen, table1, K1_direct) =
+        routeIsWO(K1_direct)
+        &&
+        (!routeIsWO(K1_T2) || routeCost(K1_direct) <= routeCost(K1_T2))
+        &&
+        (!routeIsWO(K1_T3) || routeCost(K1_direct) <= routeCost(K1_T3));
+
+    isShortestRWO(kitchen, table1, K1_T2) =
+        routeIsWO(K1_T2)
+        &&
+        (!routeIsWO(K1_direct) || routeCost(K1_T2) <= routeCost(K1_direct))
+        &&
+        (!routeIsWO(K1_T3) || routeCost(K1_T2) <= routeCost(K1_T3));
+
+    isShortestRWO(kitchen, table1, K1_T3) =
+        routeIsWO(K1_T3)
+        &&
+        (!routeIsWO(K1_direct) || routeCost(K1_T3) <= routeCost(K1_direct))
+        &&
+        (!routeIsWO(K1_T2) || routeCost(K1_T3) <= routeCost(K1_T2));
+
+    %table 2
+    isShortestRWO(kitchen, table2, K2_direct) =
+        routeIsWO(K2_direct)
+        &&
+        (!routeIsWO(K2_T1) || routeCost(K2_direct) <= routeCost(K2_T1))
+        &&
+        (!routeIsWO(K2_T3) || routeCost(K2_direct) <= routeCost(K2_T3));
+
+    isShortestRWO(kitchen, table2, K2_T1) =
+        routeIsWO(K2_T1)
+        &&
+        (!routeIsWO(K2_direct) || routeCost(K2_T1) <= routeCost(K2_direct))
+        &&
+        (!routeIsWO(K2_T3) || routeCost(K2_T1) <= routeCost(K2_T3));
+
+    isShortestRWO(kitchen, table2, K2_T3) =
+        routeIsWO(K2_T3)
+        &&
+        (!routeIsWO(K2_direct) || routeCost(K2_T3) <= routeCost(K2_direct))
+        &&
+        (!routeIsWO(K2_T1) || routeCost(K2_T3) <= routeCost(K2_T1));
+
+    %%table 3
+    isShortestRWO(kitchen, table3, K3_direct) =
+        routeIsWO(K3_direct)
+        &&
+        (!routeIsWO(K3_T1) || routeCost(K3_direct) <= routeCost(K3_T1))
+        &&
+        (!routeIsWO(K3_T2) || routeCost(K3_direct) <= routeCost(K3_T2));
+
+    isShortestRWO(kitchen, table3, K3_T1) =
+        routeIsWO(K3_T1)
+        &&
+        (!routeIsWO(K3_direct) || routeCost(K3_T1) <= routeCost(K3_direct))
+        &&
+        (!routeIsWO(K3_T2) || routeCost(K3_T1) <= routeCost(K3_T2));
+
+    isShortestRWO(kitchen, table3, K3_T2) =
+        routeIsWO(K3_T2)
+        &&
+        (!routeIsWO(K3_direct) || routeCost(K3_T2) <= routeCost(K3_direct))
+        &&
+        (!routeIsWO(K3_T1) || routeCost(K3_T2) <= routeCost(K3_T1));
+
+%Shortest returns to kitchen
+%% table1 -> kitchen
+
+    isShortestRWO(table1, kitchen, K1_direct) =
+        routeIsWO(K1_direct)
+        &&
+        (!routeIsWO(K1_T2) || routeCost(K1_direct) <= routeCost(K1_T2))
+        &&
+        (!routeIsWO(K1_T3) || routeCost(K1_direct) <= routeCost(K1_T3));
+
+    isShortestRWO(table1, kitchen, K1_T2) =
+        routeIsWO(K1_T2)
+        &&
+        (!routeIsWO(K1_direct) || routeCost(K1_T2) <= routeCost(K1_direct))
+        &&
+        (!routeIsWO(K1_T3) || routeCost(K1_T2) <= routeCost(K1_T3));
+
+    isShortestRWO(table1, kitchen, K1_T3) =
+        routeIsWO(K1_T3)
+        &&
+        (!routeIsWO(K1_direct) || routeCost(K1_T3) <= routeCost(K1_direct))
+        &&
+        (!routeIsWO(K1_T2) || routeCost(K1_T3) <= routeCost(K1_T2));
+
+%% table2 -> kitchen
+
+    isShortestRWO(table2, kitchen, K2_direct) =
+        routeIsWO(K2_direct)
+        &&
+        (!routeIsWO(K2_T1) || routeCost(K2_direct) <= routeCost(K2_T1))
+        &&
+        (!routeIsWO(K2_T3) || routeCost(K2_direct) <= routeCost(K2_T3));
+
+    isShortestRWO(table2, kitchen, K2_T1) =
+        routeIsWO(K2_T1)
+        &&
+        (!routeIsWO(K2_direct) || routeCost(K2_T1) <= routeCost(K2_direct))
+        &&
+        (!routeIsWO(K2_T3) || routeCost(K2_T1) <= routeCost(K2_T3));
+
+    isShortestRWO(table2, kitchen, K2_T3) =
+        routeIsWO(K2_T3)
+        &&
+        (!routeIsWO(K2_direct) || routeCost(K2_T3) <= routeCost(K2_direct))
+        &&
+        (!routeIsWO(K2_T1) || routeCost(K2_T3) <= routeCost(K2_T1));
+
+%% table3 -> kitchen
+
+    isShortestRWO(table3, kitchen, K3_direct) =
+        routeIsWO(K3_direct)
+        &&
+        (!routeIsWO(K3_T1) || routeCost(K3_direct) <= routeCost(K3_T1))
+        &&
+        (!routeIsWO(K3_T2) || routeCost(K3_direct) <= routeCost(K3_T2));
+
+    isShortestRWO(table3, kitchen, K3_T1) =
+        routeIsWO(K3_T1)
+        &&
+        (!routeIsWO(K3_direct) || routeCost(K3_T1) <= routeCost(K3_direct))
+        &&
+        (!routeIsWO(K3_T2) || routeCost(K3_T1) <= routeCost(K3_T2));
+
+    isShortestRWO(table3, kitchen, K3_T2) =
+        routeIsWO(K3_T2)
+        &&
+        (!routeIsWO(K3_direct) || routeCost(K3_T2) <= routeCost(K3_direct))
+        &&
+        (!routeIsWO(K3_T1) || routeCost(K3_T2) <= routeCost(K3_T1));
+
+    %% Leaving Conditions
+    %The RW can leave the kitchen if at least one tray is loaded
+    canLeave(kitchen, s1, s2, s3) =
+        (s1 == loaded || s2 == loaded || s3 == loaded);
+
+    canLeave(table1, s1, s2, s3) = (s1 == empty);
+    canLeave(table2, s1, s2, s3) = (s2 == empty);
+    canLeave(table3, s1, s2, s3) = (s3 == empty);
+
+    canLeave(idle, s1, s2, s3) = false;
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+%  ACTIONS
+% -----------------------------------------------------------------------------------------------------------------------
+
+act
+    %% Task + Tray actions
+    setLightOff, setLight: Tray;
+    loadTray, newOrder, syncOrder, setOrderReady: Tray;
+    deliverOrder, orderReceived: Tray;
+
+    displayCollectMessage;
+
+	unloadWrongTray;
+	trayWeightReduced;
+
+    notifyService;
+    sendOrderStatus: Tray # Order;
+
+    %% Communication: Task -> Navigation
+    sendTarget, receiveTarget, commTarget: Position;
+    sendTrayStatus, receiveTrayStatus, commTrayStatus: Tray # TrayStatus;
+
+    %% Communication: Navigation -> Task
+    sendArrival, receiveArrival, commArrival: Position;
+
+	%% Communication: Navigation <-> Emergency
+	sendMovingStatus, receiveMovingStatus, commMovingStatus: MovingStatus;
+	sendRoute, receiveRoute, commRoute : Route;
+	sendRWstatus, receiveRWstatus, commRWstatus: RWstatus;
+
+
+	sendErrorAction
+	
+	
+	% Button actions
+	isButtonPressed, isButtonReleased: Button;
+	sendButtonStatus, receiveButtonStatus, commButtonStatus : Button # ButtonStatus;
+
+    %% Navigation actions
+    startMoving: Route;
+    arrived: Position;
+
+% -----------------------------------------------------------------------------------------------------------------------
+%  PROCESSES
+% -----------------------------------------------------------------------------------------------------------------------
+
+proc NavigationController(status: MovingStatus , position: Position, currentRoute: Route, target:Position, buttonGo: Button , tray1Status: TrayStatus, tray2Status: TrayStatus, tray3Status: TrayStatus, RWstatus: RWstatus) =
+% make them into a function - ant 
+% receive RWstatus to check everytime something happens (not receive button status)
+% add receieve movingStatus when the parameter status is used
+	%%Receive tray statuses.
+    %tray 1
+	(status == stopped)
+    -> sum ts: TrayStatus .
+       receiveTrayStatus(t1, ts) .
+       NavigationController(tray1Status = ts)
++
+    %tray 2
+    ( status == stopped)
+     -> sum ts: TrayStatus .
+		receiveTrayStatus(t2, ts) .
+		NavigationController(tray2Status = ts)
++
+    %tray 3
+    ( status == stopped)
+     -> sum ts: TrayStatus .
+        receiveTrayStatus(t3, ts) .
+        NavigationController(tray3Status = ts)
++
+     %% go button in 2 cases : 1) when RW is in kitchen and the tray is loaded so a new order should be delivered, 2) when teh RW is in one table and the tray is empty meaning that the order got delivered
+	( status == stopped && currentRoute == noRoute && target != idle && buttonGo == released  && canLeave(position, tray1Status, tray2Status, tray3Status) )
+	 -> isButtonPressed(go) .
+        NavigationController(buttonGo = pressed)
++
+     %% when we need to move from or to the kitchen --> find all valid routes that connect position with target, make sure that that at least one route is WO.
+     ( status == stopped && currentRoute == noRoute && target != idle && buttonGo == pressed && (position == kitchen || target == kitchen) )
+      -> sum r: Route .
+		(validRoute(position, target, r) && routeIsWO(r) &&  isShortestRWO(position, target, r))
+         -> startMoving(r) . %%take this route
+			sendMovingStatus(status) . %% send moving status and route to emergency
+            sendRoute(currentRoute) .
+            NavigationController(status=moving, currentRoute=r, RWstatus = delivering)
++
+	%%Table to table movement--> only one route availabe so no need for shortest path
+	( status == stopped && currentRoute == noRoute && target != idle && buttonGo == pressed && (position != kitchen && target != kitchen) )
+     -> sum r: Route .
+		(validRoute(position, target, r) && routeIsWO(r))
+        -> startMoving(r) . %%take this route
+           sendMovingStatus(status) .
+           sendRoute(currentRoute) .
+           NavigationController(status=moving, currentRoute=r)
++
+	%arrival
+	( status == moving && currentRoute != noRoute && target != idle)
+     -> arrived(target) .
+        sendArrival(target) .
+        sendMovingStatus(stopped) .
+        NavigationController(stopped, target, noRoute, idle, released, tray1Status, tray2Status, tray3Status) %% set status to stopped
++
+	%Receive a new target from TaskContoller
+	( status == stopped && currentRoute == noRoute)
+	 -> sum t: Position .
+		(t != idle && t != position)
+		 -> receiveTarget(t) .
+            NavigationContSroller(target = t)
++
+	( status == moving )
+	 -> sendMovingStatus(moving) .
+		NavigationController(status, route)
++
+	 ( status == stopped )
+	 -> sendMovingStatus(stopped) .
+		sendRoute(currentRoute) .
+		NavigationController(status, currentRoute)
+
++
+	%% if status == stopped and emergency = released and RWstatus = emergencyresolved --> startMoving(currentRoute) , RWstatus == previous status received by emergency controller
+	%% we define this , even though it will never happen. Question if its correct.
+	%if no route is assigned to it and its not delivering, it means that fro some reason it cant find a valid route --> blockage due to obstacles
+	( status == stopped && currentRoute == noRoute && target != idle && go == pressed && RWstatus != delivering) 
+	 -> sendRWstatus(blocked) .
+		NavigationController(RWstatus = blocked);
+
+proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray -> Position, traystatus: Tray -> TrayStatus, position: Position) =
+    % newOrder sets order status to preparing and assigns a "random" table - FR2
+    sum t: Tray . 
+	((orders(t) == null)
+     -> newOrder(t) .
+		syncOrder(t) .
+		sendOrderStatus(t, preparing) .
+		TaskController(lights, orders[t -> preparing], table[t -> if(t == t1, table1, if(t == t2, table2, table3))], traystatus, position))
++
+	% setOrderReady sets order status to ready - FR3
+	sum t: Tray .
+	((orders(t) == preparing)
+     -> setOrderReady(t) .
+		sendOrderStatus(t, ready) . 
+		TaskController(lights, orders[t -> ready], table, traystatus, position))
++   
+	% If an order is ready while RW is not in kitchen, the taskcontroller sends the new target and waits until navigation confirms arrival in kitchen - FR3
+ 	((exists t: Tray . orders(t) == ready) && position != kitchen)
+	 -> sendTarget(kitchen) .
+		receiveArrival(kitchen) . 
+		TaskController(lights, orders, table, traystatus, kitchen)
++
+    % allows all trays with a ready order to be loaded when the RW is in the kitchen. When a tray is loaded, the order is considered picked up.
+	sum t: Tray . 
+	((orders(t) == ready && traystatus(t) == empty && position == kitchen)
+     -> loadTray(t) .
+		sendTrayStatus(t, loaded) .
+		sendOrderStatus(t, pickedup) .
+		TaskController(lights, orders[t -> pickedup], table, traystatus[t -> loaded], position))
++
+%check - ant
+    % the robot can call a human waiter when the Service button is pressed - FR13
+	(true)  %% the true here means that from any state we can press the service button ( re check)
+	 -> isButtonPressed(service) . 
+		notifyService . 
+		TaskController(lights, orders, table, traystatus, position)
++
+    % if all trays are empty and there are no orders, the robot returns to kitchen - FR15
+	((forall t: Tray . (traystatus(t) == empty && orders(t) == null)) && position != kitchen)
+	 -> sendTarget(kitchen) .
+		receiveArrival(kitchen) .
+		TaskController(lights, orders, table, traystatus, kitchen)
++
+    %delivery priority: t1 > t2 > t3
+    %% Task chooses WHAT table should be visited.
+    %% Navigation performs the movement and confirms arrival.
+	(orders(t1) == pickedup)
+	 -> sendTarget(table(t1)) .
+		receiveArrival(table(t1)) .
+		deliverOrder(t1) .
+		setLight(t1) . 
+		displayCollectMessage .
+		TaskController(lights[t1 -> green][t2 -> red][t3 -> red], orders, table, traystatus, table(t1))
++
+	%else does the delivery sequence for tray2
+	(orders(t1) != pickedup && orders(t2) == pickedup)
+     -> sendTarget(table(t2)) .
+		receiveArrival(table(t2)) .
+		deliverOrder(t2) .
+		setLight(t2) .
+		displayCollectMessage .
+		TaskController(lights[t2 -> green][t1 -> red][t3 -> red], orders, table, traystatus, table(t2))
++
+	% else does the delivery sequence for tray3
+	(orders(t1) != pickedup && orders(t2) != pickedup && orders(t3) == pickedup)
+	 -> sendTarget(table(t3)) .
+		receiveArrival(table(t3)) .
+		deliverOrder(t3) .
+		setLight(t3) . 
+		displayCollectMessage .
+		TaskController(lights[t3 -> green][t1 -> red][t2 -> red], orders, table, traystatus, table(t3))
++
+	% executes order delivery
+	sum t: Tray .
+	(orders(t) == pickedup && lights(t) == green)
+	 -> orderReceived(t) .
+		sendOrderStatus(t, delivered) .
+		sendTrayStatus(t, empty) .
+		TaskController(lambda temp: Tray . off, orders[t -> null], table[t -> idle], traystatus[t -> empty], table(t))
++
+    %add wrong delivery situation
+    sum t:Tray .
+	(traystatus(t) == loaded && lights(t) == red && (position==table1 || position==table2 || position==table3))
+     -> unloadWrongTray(t) . 
+		sendErrorAction .
+		TaskController(lights, orders[t -> null], table[t -> idle],   traystatus[t -> empty], position); %krata idio to position kai kani reset to tray afou i paraggelia paradothike lathos
++
+	%weight reduced send message
+	sum t:Tray .
+	(traystatus(t) == loaded && orders(t) == pickedup) 
+	 -> trayWeightReduced(t) .
+		sendTrayStatus(t, reducedWeight) .
+		TaskController(lights, orders, table, traystatus, position);
+
+proc SafetyController(button:Button -> ButtonStatus, movingStatus : MovingStatus, rwstatus: RWstatus) = 
+%% receive the moving status from the navigation controller once and parse it in the parameter to use it later
+	 sum ms : MovingStatus .
+	 receiveMovingStatus(ms) .
+	 SafetyController(button, ms)
++
+%% receive the route that the RW has currently following !! see where i have to use it!!
+	 sum r : Route .
+	 receiveRoute(r).
+	 SafetyController(button, movingStatus, r)
++
+%% receive the route that the RW has currently following
+	 sum rw : rwStatus .
+	 receiverwStatus(rw).
+	 SafetyController(button, movingStatus, rw)
++
+	 isButtonPressed(emergency) . 
+	 sendRWstatus(emergencyActive) . 
+	 SafetyController(button[emergency -> pressed], movingStatus, emergencyActive)
++
+	 isButtonReleased(emergency) . 
+	 sendRWstatus(emergencyResolved) . 
+	 SafetyController(button[emergency -> released], movingStatus. emergencyResolved)
++
+%% SR2 -  checks the movingStatus from the Navigation controller and gets the emrgency button status from the proc parameter - !!what to do with actions that are not allowed!!
+	 (movingStatus == moving && button(emergency) == pressed)
+	 -> stopMoving .
+		sendMovingStatus(stopped) .
+		SafetyController(button, stopped)
++
+%% SR3 -  checks the movingStatus from the Navigation controller and gets the emrgency button status from the proc parameter and gets the pre calculated path from the navigation controller - !!what to do with "provided that no other safety condiiton prevents movement"
+	(movingStatus == stopped && button(emergency) == released)
+	 -> sum r : Route .
+		receiveRoute(r).
+		startMoving(r) .
+		sendMovingStatus(moving) .
+		SafetyController(button, moving);
+
+
+%!!add also a warning for when something is added in the tray while going to a table??!!
+%open the emergency light when sendNotification is doen in order to see that somehting is waiting for (what happens after that wehn waiter comes?)
+%!! do I need sendButton??!!
+%!!check if i need also moving status in safety controller or rwstatus is enouch?!!
+
+
+init
+	allow(
+	 {setLightOff,
+	  setLight,
+
+	  loadTray,
+
+	  newOrder,
+	  syncOrder,
+	  setOrderReady,
+	  deliverOrder,
+	  orderReceived,
+	  sendOrderStatus,
+
+	  isButtonPressed,
+	  isButtonReleased,
+
+	  displayCollectMessage,
+	  notifyService, 
+	
+	  startMoving,
+	  arrived,
+
+	  commTarget,
+	  commArrival,
+	  commTrayStatus,
+	  commMovingStatus,
+	  commButtonStatus,
+	  commRoute},
+	  comm(
+		{sendTarget | receiveTarget -> commTarget,
+		 sendArrival | receiveArriva -> commArrival,
+		 sendTrayStatus | receiveTrayStatus -> commTrayStatus,
+		 sendMovingStatus | receiveMovingStatus -> commMovingStatus,
+		 sendButtonStatus | receiveButtonStatus -> commButtonStatus,
+		 sendRoute | receiveRoute -> commRoute},
+
+		 TaskController(lambda x: Tray . off, lambda x: Tray . null, lambda x: Tray . idle, lambda x: Tray . empty, kitchen)
+		 ||
+		 NavigationController(stopped, kitchen, noRoute, idle, released, empty, empty, empty)
+	  )
+	);
+
