@@ -455,27 +455,32 @@ proc NavigationController(status: MovingStatus , position: Position, currentRout
 
 
 
-proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray -> Position, traystatus: Tray -> TrayStatus, position: Position) =
+proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray -> Position, traystatus: Tray -> TrayStatus, position: Position, RWstatus: RWstatus) =
     % newOrder sets order status to preparing and assigns a "random" table - FR2
-    sum t: Tray . 
-    ((orders(t) == null)
+
+	sum rw : RWstatus .
+    receiveRWstatus(rw) .
+	TaskController(lights, orders, table, traystatus, position, rw)
+
++   sum t: Tray . 
+    ((orders(t) == null && RWstatus != emergencyActive && RWstatus != blockedActive)
      -> newOrder(t) .
         syncOrder(t) .
         sendOrderStatus(t, preparing) .
-        TaskController(lights, orders[t -> preparing], table[t -> if(t == t1, table1, if(t == t2, table2, table3))], traystatus, position))
+        TaskController(lights, orders[t -> preparing], table[t -> if(t == t1, table1, if(t == t2, table2, table3))], traystatus, position, RWstatus))
 +
     % setOrderReady sets order status to ready - FR3
     sum t: Tray .
     ((orders(t) == preparing)
      -> setOrderReady(t) .
         sendOrderStatus(t, ready) . 
-        TaskController(lights, orders[t -> ready], table, traystatus, position))
+        TaskController(lights, orders[t -> ready], table, traystatus, position, RWstatus))
 +  
     % If an order is ready while RW is not in kitchen, the taskcontroller sends the new target and waits until navigation confirms arrival in kitchen - FR3
     ((exists t: Tray . orders(t) == ready) && position != kitchen)
      -> sendTarget(kitchen) .
         receiveArrival(kitchen) . 
-        TaskController(lights, orders, table, traystatus, kitchen)
+        TaskController(lights, orders, table, traystatus, kitchen, RWstatus)
 +
     % allows all trays with a ready order to be loaded when the RW is in the kitchen. When a tray is loaded, the order is considered picked up.
     sum t: Tray . 
@@ -483,20 +488,19 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
      -> loadTray(t) .
         sendTrayStatus(t, loaded) .
         sendOrderStatus(t, pickedup) .
-        TaskController(lights, orders[t -> pickedup], table, traystatus[t -> loaded], position))
-+
-%check - ant
+        TaskController(lights, orders[t -> pickedup], table, traystatus[t -> loaded], position, RWstatus))
+
+
     % the robot can call a human waiter when the Service button is pressed - FR13
-    (true)  %% the true here means that from any state we can press the service button ( re check)
-     -> isButtonPressed(service) . 
+     + isButtonPressed(service) . 
         notifyService . 
-        TaskController(lights, orders, table, traystatus, position)
+        TaskController(lights, orders, table, traystatus, position, RWstatus)
 +
     % if all trays are empty and there are no orders, the robot returns to kitchen - FR15
     ((forall t: Tray . (traystatus(t) == empty && orders(t) == null)) && position != kitchen)
      -> sendTarget(kitchen) .
         receiveArrival(kitchen) .
-        TaskController(lights, orders, table, traystatus, kitchen)
+        TaskController(lights, orders, table, traystatus, kitchen, RWstatus)
 +
     %delivery priority: t1 > t2 > t3
     %% Task chooses WHAT table should be visited.
@@ -507,7 +511,7 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
         deliverOrder(t1) .
         setLight(t1) . 
         displayCollectMessage .
-        TaskController(lights[t1 -> green][t2 -> red][t3 -> red], orders, table, traystatus, table(t1))
+        TaskController(lights[t1 -> green][t2 -> red][t3 -> red], orders, table, traystatus, table(t1), RWstatus)
 +
     %else does the delivery sequence for tray2
     (orders(t1) != pickedup && orders(t2) == pickedup)
@@ -516,7 +520,7 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
         deliverOrder(t2) .
         setLight(t2) .
         displayCollectMessage .
-        TaskController(lights[t2 -> green][t1 -> red][t3 -> red], orders, table, traystatus, table(t2))
+        TaskController(lights[t2 -> green][t1 -> red][t3 -> red], orders, table, traystatus, table(t2), RWstatus)
 +
     % else does the delivery sequence for tray3
     (orders(t1) != pickedup && orders(t2) != pickedup && orders(t3) == pickedup)
@@ -525,29 +529,28 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
         deliverOrder(t3) .
         setLight(t3) . 
         displayCollectMessage .
-        TaskController(lights[t3 -> green][t1 -> red][t2 -> red], orders, table, traystatus, table(t3))
+        TaskController(lights[t3 -> green][t1 -> red][t2 -> red], orders, table, traystatus, table(t3), RWstatus)
 +
     % executes order delivery
     sum t: Tray .
     (orders(t) == pickedup && lights(t) == green)
      -> orderReceived(t) .
-        sendOrderStatus(t, delivered) .
         sendTrayStatus(t, empty) .
-        TaskController(lambda temp: Tray . off, orders[t -> null], table[t -> idle], traystatus[t -> empty], table(t))
+        TaskController(lambda temp: Tray . off, orders[t -> null], table[t -> idle], traystatus[t -> empty], table(t), RWstatus)
 +
     %add wrong delivery situation
     sum t:Tray .
     (traystatus(t) == loaded && lights(t) == red && (position==table1 || position==table2 || position==table3))
      -> unloadWrongTray(t) . 
         sendRWstatus(emergencyActive) .
-        TaskController(lights, orders[t -> null], table[t -> idle],   traystatus[t -> empty], position)
+        TaskController(lights, orders[t -> null], table[t -> idle],   traystatus[t -> empty], position, emergencyActive)
 +
     %weight reduced send message
     sum t:Tray .
     (traystatus(t) == loaded && orders(t) == pickedup) 
      -> trayWeightReduced(t) .
         sendTrayStatus(t, reducedWeight) .
-        TaskController(lights, orders, table, traystatus, position);
+        TaskController(lights, orders, table, traystatus, position, RWstatus);
 
 proc SafetyController(movingStatus : MovingStatus, RWstatus: RWstatus) = 
 
@@ -615,7 +618,7 @@ init
          sendMovingStatus | receiveMovingStatus -> commMovingStatus,
          sendRWstatus | receiveRWstatus -> commRWstatus},
 
-         TaskController(lambda x: Tray . off, lambda x: Tray . null, lambda x: Tray . idle, lambda x: Tray . empty, kitchen)
+         TaskController(lambda x: Tray . off, lambda x: Tray . null, lambda x: Tray . idle, lambda x: Tray . empty, kitchen, delivering)
          ||
          NavigationController(stopped, kitchen, noRoute, idle, released, empty, empty, empty, delivering)
          ||
