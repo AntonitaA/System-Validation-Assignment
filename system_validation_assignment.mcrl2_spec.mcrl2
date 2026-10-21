@@ -329,6 +329,10 @@ act
     stopMoving;
     arrived: Position;
 
+    sendOrderStatus: Tray # Order;  %% no receive
+
+
+
     % Button actions
     isButtonPressed, isButtonReleased: Button;
 
@@ -453,14 +457,14 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
      -> newOrder(t) .
         syncOrder(t) .
         sendOrderStatus(t, preparing) .
-        TaskController(lights, orders[t -> preparing], table[t -> if(t == t1, table1, if(t == t2, table2, table3))], traystatus, position))
+        TaskController(lights, orders[t -> preparing], table[t -> if(t == t1, table1, if(t == t2, table2, table3))], traystatus, position, RWstatus))
 +
     % setOrderReady sets order status to ready - FR3
     sum t: Tray .
     ((orders(t) == preparing)
      -> setOrderReady(t) .
         sendOrderStatus(t, ready) . 
-        TaskController(lights, orders[t -> ready], table, traystatus, position))
+        TaskController(lights, orders[t -> ready], table, traystatus, position, RWstatus))
 +  
     % If an order is ready while RW is not in kitchen, the taskcontroller sends the new target and waits until navigation confirms arrival in kitchen - FR3
     ((exists t: Tray . orders(t) == ready) && position != kitchen)
@@ -474,9 +478,9 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
      -> loadTray(t) .
         sendTrayStatus(t, loaded) .
         sendOrderStatus(t, pickedup) .
-        TaskController(lights, orders[t -> pickedup], table, traystatus[t -> loaded], position))
-+
-%check - ant
+        TaskController(lights, orders[t -> pickedup], table, traystatus[t -> loaded], position, RWstatus))
+
+
     % the robot can call a human waiter when the Service button is pressed - FR13
     (true)  %% the true here means that from any state we can press the service button ( re check)
      -> isButtonPressed(service) . 
@@ -582,7 +586,6 @@ init
       setOrderReady,
       deliverOrder,
       orderReceived,
-      sendOrderStatus,
 
       isButtonPressed,
       isButtonReleased,
