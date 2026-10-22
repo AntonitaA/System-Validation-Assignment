@@ -416,9 +416,9 @@ proc NavigationController(
      && RWstatus != emergencyWrongTray)
     ->
         arrived(target) .
+		stopMoving .
+		sendMovingStatus(stopped) .
         sendArrival(target) .
-        stopMoving .
-        sendMovingStatus(stopped) .
         NavigationController(
             stopped,
             target,
@@ -478,13 +478,33 @@ proc NavigationController(
 
 +
 
+	(status == stopped
+ && RWstatus == emergencyResolved
+ && buttonGo == released
+ && currentRoute != noRoute
+ && target != idle)
+->
+    isButtonPressed(go) .
+    NavigationController(
+        stopped,
+        position,
+        currentRoute,
+        target,
+        pressed,
+        tray1Status,
+        tray2Status,
+        RWstatus
+    )
++
+
     % Resume the saved route when an emergency is resolved.
     (status == stopped
      && RWstatus == emergencyResolved
-     && buttonGo == released
+     && buttonGo == pressed
      && currentRoute != noRoute
      && target != idle)
     ->
+		
         startMoving(currentRoute) .
         sendMovingStatus(moving) .
         NavigationController(
@@ -828,8 +848,8 @@ proc TaskController(
      && RWstatus != emergencyWrongTray)
     ->
         isWrongTrayUnloaded(t2) .
-        sendTrayStatus(t2, wrongPickedup) .
         sendEmergencyOccured(wrongTrayPickedup) .
+		sendTrayStatus(t2, wrongPickedup) .
         TaskController(
             light1,
             light2,
@@ -852,8 +872,8 @@ proc TaskController(
      && RWstatus != emergencyWrongTray)
     ->
         isWrongTrayUnloaded(t1) .
-        sendTrayStatus(t1, wrongPickedup) .
         sendEmergencyOccured(wrongTrayPickedup) .
+		sendTrayStatus(t1, wrongPickedup) .
         TaskController(
             light1,
             light2,
