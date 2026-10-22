@@ -1,0 +1,700 @@
+% -----------------------------------------------------------------------------------------------------------------------
+% REDUCED RESTAURANT WAITER MODEL
+% 1 tray (t1) + 1 table (table1)
+% -----------------------------------------------------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------------------------------------------------
+% DATA TYPES
+% -----------------------------------------------------------------------------------------------------------------------
+
+sort
+    Light = struct off | green;
+
+    Tray = struct t1;
+
+    TrayStatus = struct
+        empty
+      | loaded
+      | reducedWeight;
+
+    Order = struct
+        null
+      | preparing
+      | ready
+      | pickedup;
+
+    Button = struct
+        emergency
+      | go
+      | service;
+
+    ButtonStatus = struct
+        pressed
+      | released;
+
+    MovingStatus = struct
+        moving
+      | stopped;
+
+    RWstatus = struct
+        delivering
+      | emergencyButtonActive
+      | emergencyWeightTray
+      | emergencyResolved;
+
+    EmergencyCause = struct
+        none
+      | byButton
+      | reducedTrayWeight;
+
+    Position = struct
+        idle
+      | kitchen
+      | table1;
+
+    Path = struct p1;
+
+    Route = struct
+        noRoute
+      | K1_direct;
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+% FUNCTIONS
+% -----------------------------------------------------------------------------------------------------------------------
+
+map
+    isPWO: Path -> Bool;
+    routeIsWO: Route -> Bool;
+    validRoute: Position # Position # Route -> Bool;
+    canLeave: Position # TrayStatus -> Bool;
+
+var
+    pos, pos2: Position;
+    route: Route;
+    ts: TrayStatus;
+
+eqn
+    % The only path is obstacle-free.
+    isPWO(p1) = true;
+
+    routeIsWO(noRoute) = false;
+    routeIsWO(K1_direct) = isPWO(p1);
+
+    % The same route connects kitchen and table1 in both directions.
+    validRoute(pos, pos2, route) =
+        (pos == kitchen && pos2 == table1 && route == K1_direct)
+        ||
+        (pos == table1 && pos2 == kitchen && route == K1_direct);
+
+    % Robot may leave the kitchen only when the tray is loaded.
+    canLeave(kitchen, ts) = (ts == loaded);
+
+    % Robot may leave table1 only when the tray is empty.
+    canLeave(table1, ts) = (ts == empty);
+
+    canLeave(idle, ts) = false;
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+% ACTIONS
+% -----------------------------------------------------------------------------------------------------------------------
+
+act
+    % Task / tray actions
+    setLight: Tray;
+
+    loadTray, newOrder, syncOrder, setOrderReady: Tray;
+    deliverOrder, orderReceived: Tray;
+
+    isTrayWeightReduced, isTrayWeightResolved: Tray;
+
+    % Task <-> Safety
+    sendEmergencyOccured, receiveEmergencyOccured, commEmergencyOccured: EmergencyCause;
+    sendEmergencyResolved, receiveEmergencyResolved, commEmergencyResolved: EmergencyCause;
+
+    emergencyOccured;
+
+    displayCollectMessage;
+    notifyService;
+
+    % Navigation actions
+    startMoving: Route;
+    stopMoving;
+    arrived: Position;
+
+    % Buttons
+    isButtonPressed, isButtonReleased: Button;
+
+    % Task -> Navigation
+    sendTarget, receiveTarget, commTarget: Position;
+    sendTrayStatus, receiveTrayStatus, commTrayStatus: Tray # TrayStatus;
+
+    % Navigation -> Task
+    sendArrival, receiveArrival, commArrival: Position;
+
+    % Navigation -> Safety
+    sendMovingStatus, receiveMovingStatus, commMovingStatus: MovingStatus;
+
+    % Safety -> Navigation
+    sendRWstatusNav, receiveRWstatusNav, commRWstatusNav: RWstatus;
+
+    % Safety -> Task
+    sendRWstatusTask, receiveRWstatusTask, commRWstatusTask: RWstatus;
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+% NAVIGATION CONTROLLER
+% -----------------------------------------------------------------------------------------------------------------------
+
+proc NavigationController(
+        status: MovingStatus,
+        position: Position,
+        currentRoute: Route,
+        target: Position,
+        buttonGo: ButtonStatus,
+        trayStatus: TrayStatus,
+        RWstatus: RWstatus
+    ) =
+
+    % Receive RW status from Safety.
+    sum rw: RWstatus .
+        receiveRWstatusNav(rw) .
+        NavigationController(
+            status,
+            position,
+            currentRoute,
+            target,
+            buttonGo,
+            trayStatus,
+            rw
+        )
+
++
+
+    % Receive the current status of the only tray.
+    % We allow tray-status updates while an emergency is active.
+    (status == stopped)
+    ->
+        sum newTrayStatus: TrayStatus .
+            receiveTrayStatus(t1, newTrayStatus) .
+            NavigationController(
+                status,
+                position,
+                currentRoute,
+                target,
+                buttonGo,
+                newTrayStatus,
+                RWstatus
+            )
+
++
+
+    % Go button can be pressed:
+    % 1. at the kitchen when the tray is loaded;
+    % 2. at table1 when the tray is empty.
+    (status == stopped
+     && currentRoute == noRoute
+     && target != idle
+     && buttonGo == released
+     && canLeave(position, trayStatus)
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        isButtonPressed(go) .
+        NavigationController(
+            status,
+            position,
+            currentRoute,
+            target,
+            pressed,
+            trayStatus,
+            RWstatus
+        )
+
++
+
+    % Start movement.
+    % There is only one possible route in the reduced model.
+    (status == stopped
+     && currentRoute == noRoute
+     && target != idle
+     && buttonGo == pressed
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        sum r: Route .
+            (validRoute(position, target, r)
+             && routeIsWO(r))
+            ->
+                startMoving(r) .
+                sendMovingStatus(moving) .
+                NavigationController(
+                    moving,
+                    position,
+                    r,
+                    target,
+                    buttonGo,
+                    trayStatus,
+                    delivering
+                )
+
++
+
+    % Arrival at the current target.
+    (status == moving
+     && currentRoute != noRoute
+     && target != idle
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        arrived(target) .
+        sendArrival(target) .
+        stopMoving .
+        sendMovingStatus(stopped) .
+        NavigationController(
+            stopped,
+            target,
+            noRoute,
+            idle,
+            released,
+            trayStatus,
+            RWstatus
+        )
+
++
+
+    % Receive a new target from TaskController.
+    (status == stopped
+     && currentRoute == noRoute
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        sum t: Position .
+            (t != idle && t != position)
+            ->
+                receiveTarget(t) .
+                NavigationController(
+                    status,
+                    position,
+                    currentRoute,
+                    t,
+                    buttonGo,
+                    trayStatus,
+                    RWstatus
+                )
+
++
+
+    % Stop if an emergency becomes active while moving.
+    (status == moving
+     && (RWstatus == emergencyButtonActive
+         || RWstatus == emergencyWeightTray)
+     && buttonGo == pressed)
+    ->
+        stopMoving .
+        sendMovingStatus(stopped) .
+        NavigationController(
+            stopped,
+            position,
+            currentRoute,
+            target,
+            released,
+            trayStatus,
+            RWstatus
+        )
+
++
+
+    % Resume the saved route after the emergency is resolved.
+    (status == stopped
+     && RWstatus == emergencyResolved
+     && buttonGo == released
+     && currentRoute != noRoute
+     && target != idle)
+    ->
+        startMoving(currentRoute) .
+        sendMovingStatus(moving) .
+        NavigationController(
+            moving,
+            position,
+            currentRoute,
+            target,
+            pressed,
+            trayStatus,
+            delivering
+        );
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+% TASK CONTROLLER
+% -----------------------------------------------------------------------------------------------------------------------
+
+proc TaskController(
+        light: Light,
+        order: Order,
+        trayStatus: TrayStatus,
+        position: Position,
+        RWstatus: RWstatus
+    ) =
+
+    % Receive the current RW status from SafetyController.
+    sum rw: RWstatus .
+        receiveRWstatusTask(rw) .
+        TaskController(
+            light,
+            order,
+            trayStatus,
+            position,
+            rw
+        )
+
++
+
+    % A new order is created.
+    (order == null
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        newOrder(t1) .
+        syncOrder(t1) .
+        TaskController(
+            light,
+            preparing,
+            trayStatus,
+            position,
+            RWstatus
+        )
+
++
+
+    % The order becomes ready.
+    (order == preparing
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        setOrderReady(t1) .
+        TaskController(
+            light,
+            ready,
+            trayStatus,
+            position,
+            RWstatus
+        )
+
++
+
+    % If the order becomes ready while the robot is not in the kitchen,
+    % first return to the kitchen.
+    (order == ready
+     && position != kitchen
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        sendTarget(kitchen) .
+        receiveArrival(kitchen) .
+        TaskController(
+            light,
+            order,
+            trayStatus,
+            kitchen,
+            RWstatus
+        )
+
++
+
+    % Load the only tray.
+    (order == ready
+     && trayStatus == empty
+     && position == kitchen
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        loadTray(t1) .
+        sendTrayStatus(t1, loaded) .
+        TaskController(
+            light,
+            pickedup,
+            loaded,
+            position,
+            RWstatus
+        )
+
++
+
+    % Customer Service button.
+    isButtonPressed(service) .
+    notifyService .
+    TaskController(
+        light,
+        order,
+        trayStatus,
+        position,
+        RWstatus
+    )
+
++
+
+    % Once the delivery is complete, return to the kitchen.
+    (trayStatus == empty
+     && order == null
+     && position != kitchen
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        sendTarget(kitchen) .
+        receiveArrival(kitchen) .
+        TaskController(
+            light,
+            order,
+            trayStatus,
+            kitchen,
+            RWstatus
+        )
+
++
+
+    % Deliver the picked-up order to table1.
+    (order == pickedup
+     && position != table1
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        sendTarget(table1) .
+        receiveArrival(table1) .
+        deliverOrder(t1) .
+        setLight(t1) .
+        displayCollectMessage .
+        TaskController(
+            green,
+            order,
+            trayStatus,
+            table1,
+            RWstatus
+        )
+
++
+
+    % Customer removes the order from the tray.
+    (order == pickedup
+     && light == green
+     && position == table1
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        orderReceived(t1) .
+        sendTrayStatus(t1, empty) .
+        TaskController(
+            off,
+            null,
+            empty,
+            position,
+            RWstatus
+        )
+
++
+
+    % Reduced tray weight emergency.
+    (trayStatus == loaded
+     && order == pickedup
+     && RWstatus != emergencyButtonActive
+     && RWstatus != emergencyWeightTray)
+    ->
+        isTrayWeightReduced(t1) .
+        sendTrayStatus(t1, reducedWeight) .
+        sendEmergencyOccured(reducedTrayWeight) .
+        TaskController(
+            light,
+            order,
+            reducedWeight,
+            position,
+            RWstatus
+        )
+
++
+
+    % Reduced tray weight emergency resolved.
+    (trayStatus == reducedWeight)
+    ->
+        isTrayWeightResolved(t1) .
+        sendTrayStatus(t1, loaded) .
+        sendEmergencyResolved(reducedTrayWeight) .
+        TaskController(
+            light,
+            order,
+            loaded,
+            position,
+            RWstatus
+        );
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+% SAFETY CONTROLLER
+% -----------------------------------------------------------------------------------------------------------------------
+
+proc SafetyController(
+        movingStatus: MovingStatus,
+        emergencyCause: EmergencyCause,
+        RWstatus: RWstatus,
+        buttonEmergency: ButtonStatus
+    ) =
+
+    % Receive moving status from NavigationController.
+    sum ms: MovingStatus .
+        receiveMovingStatus(ms) .
+        SafetyController(
+            ms,
+            emergencyCause,
+            RWstatus,
+            buttonEmergency
+        )
+
++
+
+    % Emergency button pressed.
+    (emergencyCause == none
+     && buttonEmergency == released)
+    ->
+        isButtonPressed(emergency) .
+        emergencyOccured .
+        sendRWstatusNav(emergencyButtonActive) .
+        sendRWstatusTask(emergencyButtonActive) .
+        SafetyController(
+            movingStatus,
+            byButton,
+            emergencyButtonActive,
+            pressed
+        )
+
++
+
+    % Emergency button released.
+    (emergencyCause == byButton
+     && buttonEmergency == pressed)
+    ->
+        isButtonReleased(emergency) .
+        sendRWstatusNav(emergencyResolved) .
+        sendRWstatusTask(emergencyResolved) .
+        SafetyController(
+            movingStatus,
+            none,
+            emergencyResolved,
+            released
+        )
+
++
+
+    % Reduced tray weight emergency reported by TaskController.
+    (emergencyCause == none)
+    ->
+        receiveEmergencyOccured(reducedTrayWeight) .
+        sendRWstatusNav(emergencyWeightTray) .
+        sendRWstatusTask(emergencyWeightTray) .
+        SafetyController(
+            movingStatus,
+            reducedTrayWeight,
+            emergencyWeightTray,
+            buttonEmergency
+        )
+
++
+
+    % Reduced tray weight emergency resolved.
+    (emergencyCause == reducedTrayWeight)
+    ->
+        receiveEmergencyResolved(reducedTrayWeight) .
+        sendRWstatusNav(emergencyResolved) .
+        sendRWstatusTask(emergencyResolved) .
+        SafetyController(
+            movingStatus,
+            none,
+            emergencyResolved,
+            buttonEmergency
+        );
+
+
+% -----------------------------------------------------------------------------------------------------------------------
+% INITIALIZATION
+% -----------------------------------------------------------------------------------------------------------------------
+
+init
+    allow(
+        {
+            setLight,
+
+            loadTray,
+            newOrder,
+            syncOrder,
+            setOrderReady,
+            deliverOrder,
+            orderReceived,
+
+            isTrayWeightReduced,
+            isTrayWeightResolved,
+
+            emergencyOccured,
+
+            isButtonPressed,
+            isButtonReleased,
+
+            displayCollectMessage,
+            notifyService,
+
+            startMoving,
+            stopMoving,
+            arrived,
+
+            commTarget,
+            commArrival,
+            commTrayStatus,
+            commMovingStatus,
+            commRWstatusNav,
+            commRWstatusTask,
+            commEmergencyOccured,
+            commEmergencyResolved
+        },
+
+        comm(
+            {
+                sendTarget | receiveTarget -> commTarget,
+                sendArrival | receiveArrival -> commArrival,
+                sendTrayStatus | receiveTrayStatus -> commTrayStatus,
+                sendMovingStatus | receiveMovingStatus -> commMovingStatus,
+
+                sendRWstatusNav | receiveRWstatusNav -> commRWstatusNav,
+                sendRWstatusTask | receiveRWstatusTask -> commRWstatusTask,
+
+                sendEmergencyOccured | receiveEmergencyOccured -> commEmergencyOccured,
+                sendEmergencyResolved | receiveEmergencyResolved -> commEmergencyResolved
+            },
+
+            TaskController(
+                off,
+                null,
+                empty,
+                kitchen,
+                delivering
+            )
+
+            ||
+
+            NavigationController(
+                stopped,
+                kitchen,
+                noRoute,
+                idle,
+                released,
+                empty,
+                delivering
+            )
+
+            ||
+
+            SafetyController(
+                stopped,
+                none,
+                delivering,
+                released
+            )
+        )
+    );
