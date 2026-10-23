@@ -215,7 +215,7 @@ act
     setLight: Tray;
 
     loadTray, newOrder, setOrderReady: Tray;
-    deliverOrder, orderReceived: Tray;
+    deliverOrder, setOrderDelivered, orderReceived: Tray;
 
     isWrongTrayUnloaded, isWrongTrayResolved: Tray;
     isTrayWeightReduced, isTrayWeightResolved: Tray;
@@ -750,6 +750,7 @@ proc TaskController(
         sendTarget(table1) .
         receiveArrival(table1) .
         deliverOrder(t1) .
+		setOrderDelivered(t1) .
         setLight(t1) .
         displayCollectMessage .
         TaskController(
@@ -776,6 +777,7 @@ proc TaskController(
         sendTarget(table2) .
         receiveArrival(table2) .
         deliverOrder(t2) .
+		setOrderDelivered(t2) .
         setLight(t2) .
         displayCollectMessage .
         TaskController(
@@ -1134,6 +1136,7 @@ init
             newOrder,
             setOrderReady,
             deliverOrder,
+			setOrderDelivered,
             orderReceived,
 
             isWrongTrayUnloaded,
