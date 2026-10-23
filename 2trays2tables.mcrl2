@@ -25,7 +25,7 @@ sort
       | wrongPickedup;
 
     Order = struct
-        null
+        delivered
       | preparing
       | ready
       | pickedup;
@@ -214,7 +214,7 @@ act
     % Task / tray actions
     setLight: Tray;
 
-    loadTray, newOrder, syncOrder, setOrderReady: Tray;
+    loadTray, newOrder, setOrderReady: Tray;
     deliverOrder, orderReceived: Tray;
 
     isWrongTrayUnloaded, isWrongTrayResolved: Tray;
@@ -551,13 +551,12 @@ proc TaskController(
 +
 
     % New order for tray 1 -> table1.
-    (order1 == null
+    (order1 == delivered
      && RWstatus != emergencyButtonActive
      && RWstatus != emergencyWeightTray
      && RWstatus != emergencyWrongTray)
     ->
         newOrder(t1) .
-        syncOrder(t1) .
         TaskController(
             light1,
             light2,
@@ -572,13 +571,12 @@ proc TaskController(
 +
 
     % New order for tray 2 -> table2.
-    (order2 == null
+    (order2 == delivered
      && RWstatus != emergencyButtonActive
      && RWstatus != emergencyWeightTray
      && RWstatus != emergencyWrongTray)
     ->
         newOrder(t2) .
-        syncOrder(t2) .
         TaskController(
             light1,
             light2,
@@ -719,8 +717,8 @@ proc TaskController(
     % All deliveries finished -> return to kitchen.
     (tray1Status == empty
      && tray2Status == empty
-     && order1 == null
-     && order2 == null
+     && order1 == delivered
+     && order2 == delivered
      && position != kitchen
      && RWstatus != emergencyButtonActive
      && RWstatus != emergencyWeightTray
@@ -806,7 +804,7 @@ proc TaskController(
         TaskController(
             off,
             if(tray2Status == loaded, red, off),
-            null,
+            delivered,
             order2,
             empty,
             tray2Status,
@@ -830,7 +828,7 @@ proc TaskController(
             if(tray1Status == loaded, red, off),
             off,
             order1,
-            null,
+            delivered,
             tray1Status,
             empty,
             position,
@@ -1134,7 +1132,6 @@ init
 
             loadTray,
             newOrder,
-            syncOrder,
             setOrderReady,
             deliverOrder,
             orderReceived,
@@ -1183,8 +1180,8 @@ init
             TaskController(
                 off,
                 off,
-                null,
-                null,
+                delivered,
+                delivered,
                 empty,
                 empty,
                 kitchen,
