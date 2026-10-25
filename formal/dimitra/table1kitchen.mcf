@@ -1,0 +1,14 @@
+[
+  true*
+  .
+  commTarget(table1)
+  .
+  (!commArrival(table1))*
+  .
+  (
+    startMoving(K2_direct)
+    ||
+    startMoving(K2_via_T1)
+  )
+]
+false

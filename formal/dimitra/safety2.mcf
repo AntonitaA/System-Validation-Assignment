@@ -1,0 +1,2 @@
+[true*.commRWstatusNav(emergencyButtonActive)]
+[(!commRWstatusNav(emergencyResolved))*.startMoving(K1_direct)] false

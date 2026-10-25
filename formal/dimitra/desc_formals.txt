@@ -1,0 +1,48 @@
+newemergency.mcf
+Checks that after a wrongTrayPickedup emergency occurs, the Navigation Controller cannot report emergencyButtonActive before first reporting emergencyWrongTray.
+
+newtarget.mcf
+Checks that after the robot arrives at a position, it cannot start moving again before receiving a new target.
+
+obstaclefree.mcf
+Checks that every route used in a startMoving action is obstacle-free.
+
+safety1.mcf
+Checks that once emergencyButtonActive has occurred, the robot can never later start moving on K1_direct.
+Αυτό είναι πολύ αυστηρό, γιατί ισχύει ακόμη και μετά το emergency resolution.
+
+safety2.mcf
+Checks that after emergencyButtonActive, the robot cannot start moving on K1_direct before emergencyResolved occurs.
+
+startmovingcomm.mcf
+Tracks the robot's current position and assigned target and checks that every route selected by startMoving is valid for travelling from the current position to that target.
+
+table1kitchen.mcf
+Checks that when table1 is the assigned target, the robot cannot start using either of the routes leading to table2 before arriving at table1.
+
+targetexists.mcf
+Checks that the robot cannot start moving before any target has been assigned.
+
+twoarrivals.mcf
+Checks that two arrived actions cannot occur without a startMoving action in between.
+
+wrongTray.mcf
+Checks that after a wrong-tray pickup emergency occurs, it is possible for the Navigation Controller to eventually receive the status emergencyWrongTray.
+
+deadlockcheck1.mcf
+Checks that after the robot starts moving on K1_direct, there exists a continuation in which the movement status is communicated as moving.
+
+emergencybutton.mcf
+Checks that after an emergency caused by the emergency button becomes active, no route can be started until the emergency is resolved.
+
+emergencyweight.mcf
+Checks that after an emergency caused by unexpected tray-weight reduction becomes active, no route can be started until the emergency is resolved.
+
+movegomove.mcf
+Checks that between any two startMoving actions, the Go button must be pressed again.
+
+movement1.mcf
+Checks that the robot cannot start its first movement before the Go button has been pressed.
+
+movement2.mcf
+Checks that the robot can never start moving when its selected route is noRoute.
