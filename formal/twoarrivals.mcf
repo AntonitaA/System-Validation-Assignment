@@ -1,0 +1,10 @@
+[
+  true*
+  .
+  (exists p: Position. arrived(p))
+  .
+  (!(exists r: Route. startMoving(r)))*
+  .
+  (exists q: Position. arrived(q))
+]
+false

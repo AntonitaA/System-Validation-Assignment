@@ -1,0 +1,31 @@
+nu X(p: Position = kitchen, t: Position = idle).
+(
+  (forall q: Position.
+    [commTarget(q)] X(p,q))
+
+  &&
+
+  (forall q: Position.
+    [commArrival(q)] X(q,idle))
+
+  &&
+
+  (forall r: Route.
+    [startMoving(r)]
+    (
+      val(validRoute(p,t,r))
+      &&
+      X(p,t)
+    ))
+
+  &&
+
+  [!(
+      exists q: Position. commTarget(q)
+      ||
+      exists q: Position. commArrival(q)
+      ||
+      exists r: Route. startMoving(r)
+    )]
+  X(p,t)
+)

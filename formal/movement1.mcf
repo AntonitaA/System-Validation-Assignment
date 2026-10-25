@@ -1,0 +1,2 @@
+forall r: Route.
+[(!isButtonPressed(go))*.startMoving(r)] false

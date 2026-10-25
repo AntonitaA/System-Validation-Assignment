@@ -1,0 +1,6 @@
+[
+  (!(exists p: Position. commTarget(p)))*
+  .
+  (exists r: Route. startMoving(r))
+]
+false
