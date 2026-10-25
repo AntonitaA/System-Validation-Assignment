@@ -12,9 +12,9 @@ sort
     ButtonStatus   = struct pressed | released;
 
     MovingStatus   = struct moving | stopped;
-    RWstatus       = struct waiting | delivering | arrived | emergencyButtonActive | emergencyWeightTray | emergencyWrongTray | emergencyResolved ;
+    RWstatus       = struct waiting | delivering | arrived | emergencyButtonActive | emergencyWeightTray | emergencyWrongTray | emergencyResolved | blockedActive | blockedResolved;
 
-    EmergencyCause = struct none | byButton | wrongTrayPickedup | reducedTrayWeight;
+    EmergencyCause = struct none | byButton | byBlockage | wrongTrayPickedup | reducedTrayWeight;
 
     Position = struct idle | kitchen | table1 | table2 | table3 ;
     Path     = struct p1 | p2 | p3 | p4 | p5 | p6;
@@ -348,10 +348,7 @@ act
 
     %% Communication: Navigation <-> Emergency
     sendMovingStatus, receiveMovingStatus, commMovingStatus: MovingStatus;
-    
-
-	sendRWstatusNav, receiveRWstatusNav, commRWstatusNav: RWstatus;
-	sendRWstatusTask, receiveRWstatusTask, commRWstatusTask: RWstatus;
+    sendRWstatus, receiveRWstatus, commRWstatus: RWstatus;
 
 % -----------------------------------------------------------------------------------------------------------------------
 %  PROCESSES
@@ -361,7 +358,7 @@ proc NavigationController(status: MovingStatus , position: Position, currentRout
 
     %%Receive RWstatus, without condition because it can change at any time (e.g. emergency)
     sum rw : RWstatus .
-    receiveRWstatusNav(rw) .
+    receiveRWstatus(rw) .
     NavigationController(status, position, currentRoute, target, buttonGo, tray1Status, tray2Status, tray3Status, rw)
 +
     %%Receive tray statuses.
@@ -393,7 +390,7 @@ proc NavigationController(status: MovingStatus , position: Position, currentRout
     -> sum r: Route .
     (validRoute(position, target, r) && routeIsWO(r) &&  isShortestRWO(position, target, r))
         ->  startMoving(r) . %%take this route
-            sendMovingStatus(moving) . %% send moving status and route to emergency
+            sendMovingStatus(status) . %% send moving status and route to emergency
             NavigationController(moving, position, r, target, buttonGo, tray1Status, tray2Status, tray3Status, delivering)
 +
     %%Table to table movement--> only one route availabe so no need for shortest path
@@ -401,7 +398,7 @@ proc NavigationController(status: MovingStatus , position: Position, currentRout
      -> sum r: Route .
         (validRoute(position, target, r) && routeIsWO(r))
         -> startMoving(r) . %%take this route
-           sendMovingStatus(moving) .
+           sendMovingStatus(status) .
            NavigationController(moving, position, r, target, buttonGo, tray1Status, tray2Status, tray3Status, RWstatus)
 +
     %arrival
@@ -426,14 +423,22 @@ proc NavigationController(status: MovingStatus , position: Position, currentRout
         NavigationController(stopped, position, currentRoute, target, released, tray1Status, tray2Status, tray3Status, RWstatus)
 +
     %% restart the movement into the route saved from before the emergency, when emergency is resolved
-    ( status == stopped && RWstatus == emergencyResolved && buttonGo == released && currentRoute != noRoute && target != idle)
+    ( status == stopped && RWstatus == emergencyResolved && buttonGo == released )
     ->  startMoving(currentRoute) . %%take this route
         sendMovingStatus(moving) .
-        NavigationController(moving, position, currentRoute, target, pressed, tray1Status, tray2Status, tray3Status, delivering)
+        NavigationController(moving, position, currentRoute, target, pressed, tray1Status, tray2Status, tray3Status, RWstatus)
 +
     ( status == moving && RWstatus != emergencyButtonActive && RWstatus != emergencyWeightTray && RWstatus != emergencyWrongTray )
      -> sendMovingStatus(moving) .
-        NavigationController(status, position, currentRoute, target, buttonGo, tray1Status, tray2Status, tray3Status, RWstatus);
+        NavigationController(status, position, currentRoute, target, buttonGo, tray1Status, tray2Status, tray3Status, RWstatus)
++
+    %if no route is assigned to it and its not delivering, it means that for some reason it cant find a valid route --> blockage due to obstacles
+    ( status == stopped && currentRoute == noRoute && target != idle && buttonGo == pressed && RWstatus != delivering
+    && !(exists r: Route . validRoute(position, target, r) && routeIsWO(r)  && (((position == kitchen || target == kitchen) && isShortestRWO(position, target, r)) || (position != kitchen && target != kitchen))) )
+    -> sendRWstatus(blockedActive) .
+        NavigationController(status, position, currentRoute, target, buttonGo, tray1Status, tray2Status, tray3Status, blockedActive);
+
+
 
 
 
@@ -441,7 +446,7 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
     % newOrder sets order status to preparing and assigns a "random" table - FR2
 
     sum rw : RWstatus .
-    receiveRWstatusTask(rw) .
+    receiveRWstatus(rw) .
     TaskController(lights, orders, table, traystatus, position, rw)
 +
     sum t: Tray .
@@ -553,7 +558,7 @@ proc TaskController(lights: Tray -> Light, orders: Tray -> Order, table: Tray ->
 
 
 
-%%%%%%%%%%%%%%%%%%%% SAFETY %%%%%%%%%%%%%%
+
 
 proc SafetyController(movingStatus: MovingStatus, emergencyCause: EmergencyCause, RWstatus: RWstatus, buttonEmergency: ButtonStatus) =
 
@@ -562,47 +567,46 @@ proc SafetyController(movingStatus: MovingStatus, emergencyCause: EmergencyCause
     receiveMovingStatus(ms) .
     SafetyController(ms, emergencyCause, RWstatus, buttonEmergency)
 +
+    %% receive the status that the RW currently has
+    sum rw : RWstatus .
+    receiveRWstatus(rw) .
+    SafetyController(movingStatus, emergencyCause, rw, buttonEmergency)
++
     %% the emergency button is pressed while no other emergency is active
     ( emergencyCause == none && buttonEmergency == released )
     ->  isButtonPressed(emergency) .
         emergencyOccured .
-        sendRWstatusNav(emergencyButtonActive) .
-    	sendRWstatusTask(emergencyButtonActive) .
+        sendRWstatus(emergencyButtonActive) .
         SafetyController(movingStatus, byButton, emergencyButtonActive, pressed)
 +
     %% the emergency button can only be released after it has been pressed, which resolves the button emergency
     ( emergencyCause == byButton && buttonEmergency == pressed )
     ->  isButtonReleased(emergency) .
-        sendRWstatusNav(emergencyResolved) .
-		sendRWstatusTask(emergencyResolved) .
+        sendRWstatus(emergencyResolved) .
         SafetyController(movingStatus, none, emergencyResolved, released)
 +
     %% emergency caused by a wrong tray picked up (reported by the task controller)
     ( emergencyCause == none )
     ->  receiveEmergencyOccured(wrongTrayPickedup) .
-        sendRWstatusNav(emergencyWrongTray) .
-		sendRWstatusTask(emergencyWrongTray) .
+        sendRWstatus(emergencyWrongTray) .
         SafetyController(movingStatus, wrongTrayPickedup, emergencyWrongTray, buttonEmergency)
 +
     %% the task controller resolves the wrong tray emergency and safety changes the RWstatus
     ( emergencyCause == wrongTrayPickedup )
     ->  receiveEmergencyResolved(wrongTrayPickedup) .
-        sendRWstatusNav(emergencyResolved) .
-		sendRWstatusTask(emergencyResolved) .
+        sendRWstatus(emergencyResolved) .
         SafetyController(movingStatus, none, emergencyResolved, buttonEmergency)
 +
     %% emergency caused by a reduced tray weight (reported by the task controller)
     ( emergencyCause == none )
     ->  receiveEmergencyOccured(reducedTrayWeight) .
-        sendRWstatusNav(emergencyWeightTray) .
-		sendRWstatusTask(emergencyWeightTray) .
+        sendRWstatus(emergencyWeightTray) .
         SafetyController(movingStatus, reducedTrayWeight, emergencyWeightTray, buttonEmergency)
 +
     %% the task controller resolves the reduced weight emergency and safety changes the RWstatus
     ( emergencyCause == reducedTrayWeight )
     ->  receiveEmergencyResolved(reducedTrayWeight) .
-        sendRWstatusNav(emergencyResolved) .
-		sendRWstatusTask(emergencyResolved) .
+        sendRWstatus(emergencyResolved) .
         SafetyController(movingStatus, none, emergencyResolved, buttonEmergency);
 
 
@@ -640,8 +644,7 @@ init
       commArrival,
       commTrayStatus,
       commMovingStatus,
-      commRWstatusNav,
-	  commRWstatusTask,
+      commRWstatus,
       commEmergencyOccured,
       commEmergencyResolved},
       comm(
@@ -649,8 +652,7 @@ init
          sendArrival | receiveArrival -> commArrival,
          sendTrayStatus | receiveTrayStatus -> commTrayStatus,
          sendMovingStatus | receiveMovingStatus -> commMovingStatus,
-         sendRWstatusNav  | receiveRWstatusNav  -> commRWstatusNav,
-		 sendRWstatusTask | receiveRWstatusTask -> commRWstatusTask,
+         sendRWstatus | receiveRWstatus -> commRWstatus,
          sendEmergencyOccured | receiveEmergencyOccured -> commEmergencyOccured,
          sendEmergencyResolved | receiveEmergencyResolved -> commEmergencyResolved},
 

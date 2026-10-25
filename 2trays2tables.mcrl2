@@ -224,8 +224,6 @@ act
     sendEmergencyOccured, receiveEmergencyOccured, commEmergencyOccured: EmergencyCause;
     sendEmergencyResolved, receiveEmergencyResolved, commEmergencyResolved: EmergencyCause;
 
-    emergencyOccured;
-
     displayCollectMessage;
     notifyService;
 
@@ -1018,7 +1016,7 @@ proc SafetyController(
         RWstatus: RWstatus,
         buttonEmergency: ButtonStatus
     ) =
-
+%%remove??
     % Receive moving status from Navigation.
     sum ms: MovingStatus .
         receiveMovingStatus(ms) .
@@ -1036,7 +1034,6 @@ proc SafetyController(
      && buttonEmergency == released)
     ->
         isButtonPressed(emergency) .
-        emergencyOccured .
         sendRWstatusNav(emergencyButtonActive) .
         sendRWstatusTask(emergencyButtonActive) .
         SafetyController(
@@ -1143,8 +1140,6 @@ init
             isWrongTrayResolved,
             isTrayWeightReduced,
             isTrayWeightResolved,
-
-            emergencyOccured,
 
             isButtonPressed,
             isButtonReleased,
