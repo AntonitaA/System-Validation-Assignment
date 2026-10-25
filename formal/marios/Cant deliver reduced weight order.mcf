@@ -1,0 +1,4 @@
+forall t: Tray .
+[true* . isTrayWeightReduced(t) .
+ (!commEmergencyResolved(reducedTrayWeight))* .
+ deliverOrder(t)] false

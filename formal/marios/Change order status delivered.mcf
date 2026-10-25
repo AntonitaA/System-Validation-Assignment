@@ -1,0 +1,2 @@
+forall t: Tray.
+[true* . deliverOrder(t)]<setOrderDelivered(t)>true

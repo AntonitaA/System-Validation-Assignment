@@ -1,0 +1,1 @@
+[true* . loadTray(t1) . (!deliverOrder(t2))* . deliverOrder(t1)] true
