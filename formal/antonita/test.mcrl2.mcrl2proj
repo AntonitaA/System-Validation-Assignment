@@ -1,0 +1,34 @@
+<root>
+ <spec>test.mcrl2_spec.mcrl2</spec>
+ <properties>
+  <property>Safety commTarget</property>
+  <property>Safety commArrival</property>
+  <property>Safety commTrayStatus</property>
+  <property>Safety commMovingStatus</property>
+  <property>Safety commRWstatusNav</property>
+  <property>Safety commRWstatusTask</property>
+  <property>Safety commEmergencyOccured</property>
+  <property>Safety commEmergencyResolved</property>
+  <property>No deadlocks</property>
+  <property>After arrival the RW should stop</property>
+  <property>the RW moving status </property>
+  <property>must not accept the current position as new target</property>
+  <property>acdept a new target when stopped</property>
+  <property>route should not change when moving</property>
+  <property>emergency button pressed only wehn it is released</property>
+  <property>emergency can always be resolved</property>
+  <property>until an emergency resolved no movement possible</property>
+  <property>emergency cannot be resolved if the RW has not stopped</property>
+  <property>emergency of button or tray weight eventually stop</property>
+  <property>reduced trray then emergency due to tray weight occurs</property>
+  <property>wrong tray then emergency wrong tray</property>
+  <property>after emergency resolved then comm to task and nav</property>
+  <property>an emergency can be resolved only if it has happened 1</property>
+  <property>an emergency can be resolved only if it has happened 2</property>
+  <property>same route after emergency</property>
+  <property>test</property>
+ </properties>
+ <jittyc>false</jittyc>
+ <linearisation_method>regular</linearisation_method>
+ <enumeration_limit>0</enumeration_limit>
+</root>
