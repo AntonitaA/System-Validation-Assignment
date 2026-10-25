@@ -1,0 +1,2 @@
+[ true* . (exists c:EmergencyCause. commEmergencyOccured(c)) ]
+  mu Y. ( <true> true && [ !commRWstatusNav(emergencyResolved) && commRWstatusTask(emergencyResolved) ] Y )

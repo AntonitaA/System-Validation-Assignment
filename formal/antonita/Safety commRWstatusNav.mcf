@@ -1,0 +1,1 @@
+< true* . (exists rw: RWstatus . commRWstatusNav(rw)) > true

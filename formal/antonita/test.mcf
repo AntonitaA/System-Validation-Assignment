@@ -1,0 +1,14 @@
+[ true* . (exists r:Route. startMoving(r)) .
+  (!(exists p:Position. arrived(p)))* .
+  (exists s:RWstatus. val(s != delivering && s != emergencyResolved) && commRWstatusNav(s)) .
+  (!(exists p:Position. arrived(p)))* .
+  commRWstatusNav(emergencyResolved) ]
+  mu Y. nu X.
+    ( <true> true
+      && [ !(exists r:Route. startMoving(r))
+           && !( isButtonPressed(service) || notifyService
+                 || isButtonPressed(emergency) || isButtonReleased(emergency)
+                 || emergencyOccured ) ] Y
+      && [ isButtonPressed(service) || notifyService
+           || isButtonPressed(emergency) || isButtonReleased(emergency)
+           || emergencyOccured ] X )

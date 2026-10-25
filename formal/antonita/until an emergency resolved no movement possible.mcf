@@ -1,0 +1,4 @@
+[ true* .
+  (exists s:RWstatus. val(s != delivering && s != emergencyResolved) && commRWstatusNav(s)) .
+  (!commRWstatusNav(emergencyResolved))* .
+  (exists r:Route. startMoving(r)) ] false

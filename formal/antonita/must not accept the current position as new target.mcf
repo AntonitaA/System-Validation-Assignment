@@ -1,0 +1,4 @@
+nu X(pos:Position = kitchen).
+     [ commTarget(pos) ] false
+  && ( forall p:Position. [ arrived(p) ] X(p) )
+  && [ !(exists p:Position. arrived(p)) ] X(pos)
