@@ -1,0 +1,12 @@
+  <property>All orders must eventually be delivered</property>
+  <property>Service button</property>
+  <property>Set lights</property>
+  <property>Order ready eventually go to kitchen</property>
+  <property>Change order status delivered</property>
+  <property>Priority t1 over t2</property>
+  <property>Load then unload then reload</property>
+  <property>Cant deliver reduced weight order</property>
+
+
+
+  
