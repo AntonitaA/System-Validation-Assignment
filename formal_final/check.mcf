@@ -1,0 +1,7 @@
+[
+ true*.
+ commEmergencyOccured(reducedTrayWeight).
+ (!(commEmergencyResolved(reducedTrayWeight)))*.
+ (exists tr: Tray. isWrongTrayUnloaded(tr))
+]
+false

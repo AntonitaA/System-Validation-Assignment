@@ -1,0 +1,8 @@
+forall r: Route.
+[true*.startMoving(r)]
+mu X.
+(
+  <exists p: Position. arrived(p)> true
+  ||
+  <true> X
+)

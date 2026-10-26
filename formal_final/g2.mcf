@@ -1,0 +1,9 @@
+<true*.
+ newOrder(t1).
+ true*.
+ loadTray(t1).
+ true*.
+ deliverOrder(t1).
+ true*.
+ orderReceived(t1)
+> true

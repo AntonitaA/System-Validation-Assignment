@@ -1,0 +1,4 @@
+forall t:Tray.
+  [ true* . (isWrongTrayResolved(t) || isTrayWeightResolved(t)) ]
+  (   mu Y. ( <true> true && [ !commRWstatusNav(emergencyResolved) ] Y )
+   && mu Z. ( <true> true && [ !commRWstatusTask(emergencyResolved) ] Z ) )

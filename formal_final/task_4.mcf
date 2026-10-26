@@ -1,0 +1,23 @@
+nu X(p: Position = kitchen).
+(
+    (forall q: Position.
+        [commArrival(q)] X(q)
+    )
+    &&
+    (forall t: Tray.
+        [setOrderReady(t)]
+        (
+            val(p == kitchen)
+            ||
+            mu Y.(
+                [!commArrival(kitchen)]Y
+                &&
+                <true>true
+            )
+        )
+    )
+    &&
+    [!((exists q: Position. commArrival(q))
+       || (exists t: Tray. setOrderReady(t)))]
+    X(p)
+)

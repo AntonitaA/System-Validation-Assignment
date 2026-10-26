@@ -1,0 +1,3 @@
+[ true* . commRWstatusNav(emergencyResolved) .
+  (!( isButtonPressed(emergency) || exists c:EmergencyCause. commEmergencyOccured(c) ))* .
+  ( commRWstatusNav(emergencyResolved) || commRWstatusTask(emergencyResolved) ) ] false

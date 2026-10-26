@@ -1,0 +1,31 @@
+nu X(
+    t: Position = idle
+).
+(
+    (forall q: Position.
+        [commTarget(q)]
+        X(q)
+    )
+
+    &&
+
+    (forall p: Position.
+        [arrived(p)]
+        (
+            val(p == t)
+            &&
+            X(idle)
+        )
+    )
+
+    &&
+
+    [
+        !(
+            (exists q: Position. commTarget(q))
+            ||
+            (exists p: Position. arrived(p))
+        )
+    ]
+    X(t)
+)

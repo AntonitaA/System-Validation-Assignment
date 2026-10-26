@@ -1,0 +1,3 @@
+forall p: Position .
+  [true* . arrived(p)]
+  (mu X . ([!stopMoving] X && <true>true))

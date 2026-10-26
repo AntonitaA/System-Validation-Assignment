@@ -1,0 +1,1 @@
+< true* . (exists ec: EmergencyCause . commEmergencyOccured(ec)) > true

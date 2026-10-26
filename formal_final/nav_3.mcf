@@ -1,0 +1,16 @@
+forall r1, r2: Route.
+[
+ true*.
+ startMoving(r1).
+ (!(
+      (exists p: Position. arrived(p))
+      ||
+      isButtonPressed(emergency)
+      ||
+      commRWstatusNav(emergencyWeightTray)
+      ||
+      commRWstatusNav(emergencyWrongTray)
+   ))*.
+ startMoving(r2)
+]
+false

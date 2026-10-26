@@ -1,0 +1,8 @@
+forall tr: Tray.
+[
+ true*.
+ isWrongTrayUnloaded(tr).
+ (!commEmergencyResolved(wrongTrayPickedup))*.
+ (exists u: Tray. deliverOrder(u))
+]
+false

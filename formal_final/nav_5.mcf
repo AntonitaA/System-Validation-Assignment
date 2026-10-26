@@ -1,0 +1,74 @@
+nu X(
+    p: Position = kitchen,
+    g: ButtonStatus = released,
+    s1: TrayStatus = empty,
+    s2: TrayStatus = empty
+).
+(
+    % Keep track of tray 1 status.
+    (forall s: TrayStatus.
+        [commTrayStatus(t1,s)]
+        X(p,g,s,s2)
+    )
+
+    &&
+
+    % Keep track of tray 2 status.
+    (forall s: TrayStatus.
+        [commTrayStatus(t2,s)]
+        X(p,g,s1,s)
+    )
+
+    &&
+
+    % Remember that Go has been pressed.
+    [isButtonPressed(go)]
+    X(p,pressed,s1,s2)
+
+    &&
+
+    % Update current position after an arrival.
+    (forall q: Position.
+        [commArrival(q)]
+        X(q,g,s1,s2)
+    )
+
+    &&
+
+    % If movement starts from the kitchen,
+    % Go must be pressed and at least one tray loaded.
+    (forall r: Route.
+        [startMoving(r)]
+        (
+            val(
+                p != kitchen
+                ||
+                (
+                    g == pressed
+                    &&
+                    (s1 == loaded || s2 == loaded)
+                )
+            )
+            &&
+            X(p,released,s1,s2)
+        )
+    )
+
+    &&
+
+    % All other actions leave the tracked state unchanged.
+    [
+        !(
+            (exists s: TrayStatus. commTrayStatus(t1,s))
+            ||
+            (exists s: TrayStatus. commTrayStatus(t2,s))
+            ||
+            isButtonPressed(go)
+            ||
+            (exists q: Position. commArrival(q))
+            ||
+            (exists r: Route. startMoving(r))
+        )
+    ]
+    X(p,g,s1,s2)
+)

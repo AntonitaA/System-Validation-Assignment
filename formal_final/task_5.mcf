@@ -1,0 +1,9 @@
+[
+ true*.
+ loadTray(t1).
+ (!deliverOrder(t1))*.
+ loadTray(t2).
+ (!deliverOrder(t1))*.
+ deliverOrder(t2)
+]
+false

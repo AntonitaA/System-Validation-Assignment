@@ -1,0 +1,1 @@
+< true* . (exists ms: MovingStatus . commMovingStatus(ms)) > true

@@ -1,0 +1,2 @@
+forall t: Tray .
+[true* . loadTray(t) . (!deliverOrder(t))* . loadTray(t)]false

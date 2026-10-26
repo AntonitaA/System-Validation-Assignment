@@ -1,0 +1,4 @@
+forall tr: Tray.
+[true*.isWrongTrayUnloaded(tr)]
+<true*.commRWstatusNav(emergencyWrongTray)>
+true
