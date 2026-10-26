@@ -1,0 +1,2 @@
+[ true* . (exists r:Route. startMoving(r)) . (!stopMoving)* .
+  (exists r2:Route. startMoving(r2)) ] false

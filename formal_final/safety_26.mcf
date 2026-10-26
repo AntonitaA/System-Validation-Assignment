@@ -1,0 +1,7 @@
+[true*.commRWstatusNav(emergencyButtonActive)]
+[
+  (!commRWstatusNav(emergencyResolved))*
+  .
+  (exists r: Route. startMoving(r))
+]
+false

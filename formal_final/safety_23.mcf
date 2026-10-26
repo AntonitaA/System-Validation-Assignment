@@ -1,0 +1,5 @@
+nu X(r: Route = noRoute, mv: MovingStatus = stopped) .
+    ( val(mv == moving) => forall r2: Route . [startMoving(r2)] val(r2 == r) )
+ && ( forall r1: Route . [startMoving(r1)] X(r1, moving) )
+ && [stopMoving] X(r, stopped)
+ && [ !(exists r1: Route . startMoving(r1)) && !stopMoving ] X(r, mv)

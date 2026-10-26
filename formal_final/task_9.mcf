@@ -1,0 +1,7 @@
+[
+ true*.
+ commArrival(table2).
+ (!commArrival(table1))*.
+ deliverOrder(t1)
+]
+false

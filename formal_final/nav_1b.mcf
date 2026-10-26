@@ -1,0 +1,8 @@
+forall r1, r2: Route.
+[
+  true* .
+  startMoving(r1) .
+  (!isButtonPressed(go))* .
+  startMoving(r2)
+]
+false

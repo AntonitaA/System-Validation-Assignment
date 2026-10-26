@@ -1,0 +1,1 @@
+<true*.(exists ts: TrayStatus. commTrayStatus(t1,ts))>[true]false

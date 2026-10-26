@@ -1,0 +1,8 @@
+forall t: Tray.
+[
+ true*.
+ (exists p: Position. commArrival(p)).
+ deliverOrder(t).
+ setOrderDelivered(t)
+]
+<setLight(t)>true

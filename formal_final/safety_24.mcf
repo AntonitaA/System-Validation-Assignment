@@ -1,0 +1,7 @@
+[ true* .
+  (exists s:RWstatus. val(s == emergencyButtonActive
+                          || s == emergencyWeightTray
+                          || s == emergencyWrongTray)
+                      && commRWstatusNav(s)) .
+  (!commRWstatusNav(emergencyResolved))* .
+  (exists r:Route. startMoving(r)) ] false

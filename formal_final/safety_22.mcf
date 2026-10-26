@@ -1,0 +1,1 @@
+forall r1,r2:Route, c:EmergencyCause. val(r1 != r2) => [ true* . startMoving(r1) . true* . commEmergencyOccured(c) . true* . ( commRWstatusNav(emergencyResolved) && commRWstatusTask (emergencyResolved) ) . true* . startMoving(r2) ] false

@@ -1,0 +1,10 @@
+[
+  true*
+  .
+  (exists p: Position. commArrival(p))
+  .
+  (!(exists q: Position. commTarget(q)))*
+  .
+  (exists r: Route. startMoving(r))
+]
+false

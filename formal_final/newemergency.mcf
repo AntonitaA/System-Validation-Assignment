@@ -1,0 +1,10 @@
+[
+  true*
+  .
+  commEmergencyOccured(wrongTrayPickedup)
+  .
+  (!commRWstatusNav(emergencyWrongTray))*
+  .
+  commRWstatusNav(emergencyButtonActive)
+]
+false

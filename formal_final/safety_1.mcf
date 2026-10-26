@@ -1,0 +1,2 @@
+[ true* . (exists r:Route. startMoving(r)) . (!stopMoving)* .
+  (exists q:Position. commTarget(q)) ] false

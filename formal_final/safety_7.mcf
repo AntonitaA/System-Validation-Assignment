@@ -1,0 +1,2 @@
+[true*.(exists c: EmergencyCause. commEmergencyOccured(c))]
+<true*.commRWstatusNav(emergencyResolved)> true

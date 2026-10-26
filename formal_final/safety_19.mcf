@@ -1,0 +1,1 @@
+< true* . (exists rw: RWstatus . commRWstatusTask(rw)) > true

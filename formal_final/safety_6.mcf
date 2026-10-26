@@ -1,0 +1,2 @@
+[ true* . isButtonPressed(emergency) . (!isButtonReleased(emergency))* .
+  isButtonPressed(emergency) ] false

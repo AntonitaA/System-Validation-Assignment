@@ -1,0 +1,1 @@
+< true* . (exists t: Tray, ts: TrayStatus . commTrayStatus(t, ts)) > true
