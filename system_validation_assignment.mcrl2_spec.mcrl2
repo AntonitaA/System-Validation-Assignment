@@ -432,7 +432,6 @@ proc NavigationController(
         )
 
 +
------------------------------------------
 
     % Receive a target from TaskController.
     (status == stopped
@@ -700,7 +699,7 @@ proc TaskController(
         )
 
 +
-----------------------------------------
+
     % Customer service button.
     isButtonPressed(service) .
     notifyService .
@@ -714,7 +713,7 @@ proc TaskController(
         position,
         RWstatus
     )
----------------------------------------------
+
 +
 
     % All deliveries finished -> return to kitchen.
@@ -739,7 +738,7 @@ proc TaskController(
             kitchen,
             RWstatus
         )
-----------------------------------------------
+
 +
 
     % Delivery priority: t1 > t2.
@@ -768,7 +767,7 @@ proc TaskController(
         )
 
 +
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     % Deliver tray2 only after tray1 is no longer pending delivery.
     (order1 != pickedup
      && order2 == pickedup
