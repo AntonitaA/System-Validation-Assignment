@@ -1,1 +1,7 @@
-[true* . isButtonPressed(service)]<notifyService>true
+[
+ true*.
+ setOrderDelivered(t1).
+ true*.
+ setOrderDelivered(t2)
+]
+<true*.commTarget(kitchen)> true
