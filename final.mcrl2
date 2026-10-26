@@ -32,8 +32,7 @@ sort
 
     Button = struct
         emergency
-      | go
-      | service;
+      | go;
 
     ButtonStatus = struct
         pressed
@@ -308,8 +307,6 @@ act
 
     emergencyOccured;
     displayCollectMessage;
-
-    notifyService;
 
     startMoving: Route;
 
@@ -1301,37 +1298,6 @@ proc TaskController(
 
 
 
-    % Customer service.
-
-    isButtonPressed(service) .
-
-    notifyService .
-
-    TaskController(
-
-        light1,
-
-        light2,
-
-        order1,
-
-        order2,
-
-        tray1Status,
-
-        tray2Status,
-
-        position,
-
-        RWstatus
-
-    )
-
-
-
-+
-
-
 
     % All deliveries finished -> return to kitchen.
 
@@ -2166,8 +2132,6 @@ init
 
 
             displayCollectMessage,
-
-            notifyService,
 
 
 
