@@ -1657,7 +1657,7 @@ proc TaskController(
 
     % Wrong tray1 returned.
 
-    (tray1Status == wrongPickedup)
+	(tray1Status == wrongPickedup && RWstatus == emergencyWrongTray)
 
     ->
 
@@ -1695,7 +1695,7 @@ proc TaskController(
 
     % Wrong tray2 returned.
 
-    (tray2Status == wrongPickedup)
+	(tray2Status == wrongPickedup && RWstatus == emergencyWrongTray)
 
     ->
 
@@ -1825,7 +1825,7 @@ proc TaskController(
 
     % Restore tray1.
 
-    (tray1Status == reducedWeight)
+	(tray1Status == reducedWeight && RWstatus == emergencyWeightTray)
 
     ->
 
@@ -1863,7 +1863,7 @@ proc TaskController(
 
     % Restore tray2.
 
-    (tray2Status == reducedWeight)
+	(tray2Status == reducedWeight && RWstatus == emergencyWeightTray)
 
     ->
 
