@@ -1,3 +1,9 @@
-forall t:Tray.
-  [ true* . isWrongTrayUnloaded(t) ]
-    mu Y. ( [ !commEmergencyOccured(wrongTrayPickedup) ] Y && <true> true )
+forall t: Tray.
+[
+  true* .
+  isWrongTrayUnloaded(t)
+]
+<
+  true* .
+  commEmergencyOccured(wrongTrayPickedup)
+> true

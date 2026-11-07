@@ -1,3 +1,0 @@
-forall t:Tray.
-  [ true* . (isButtonPressed(emergency) || isTrayWeightReduced(t)) ]
-    mu Y. ( [ !stopMoving ] Y && <true> true )

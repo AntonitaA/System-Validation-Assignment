@@ -1,3 +1,7 @@
-forall t:Tray.
-  [ true* . isTrayWeightReduced(t) ]
-    mu Y. ( [ !commEmergencyOccured(reducedTrayWeight) ] Y && <true> true )
+forall t: Tray.
+[
+  true* . isTrayWeightReduced(t)
+]
+<
+  true* . commEmergencyOccured(reducedTrayWeight)
+> true

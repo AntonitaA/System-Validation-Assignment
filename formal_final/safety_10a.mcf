@@ -1,0 +1,12 @@
+forall r: Route.
+[
+  true* .
+  startMoving(r) .
+  (!stopMoving)* .
+  isButtonPressed(emergency)
+]
+mu Y. (
+  <true> true
+  &&
+  [!stopMoving] Y
+)
