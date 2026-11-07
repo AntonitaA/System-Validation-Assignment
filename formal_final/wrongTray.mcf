@@ -1,2 +1,2 @@
 [true*.commEmergencyOccured(wrongTrayPickedup)]
-<true*.commRWstatusNav(emergencyWrongTray)> true
+<true*.commRWstatusBoth(emergencyWrongTray)> true

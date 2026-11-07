@@ -1,6 +1,6 @@
-[true*.commRWstatusNav(emergencyWeightTray)]
+[true*.commRWstatusBoth(emergencyWeightTray)]
 [
-  (!commRWstatusNav(emergencyResolved))*
+  (!commRWstatusBoth(emergencyResolved))*
   .
   (exists r: Route. startMoving(r))
 ]

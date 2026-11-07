@@ -3,8 +3,8 @@
   .
   commEmergencyOccured(wrongTrayPickedup)
   .
-  (!commRWstatusNav(emergencyWrongTray))*
+  (!commRWstatusBoth(emergencyWrongTray))*
   .
-  commRWstatusNav(emergencyButtonActive)
+  commRWstatusBoth(emergencyButtonActive)
 ]
 false

@@ -1,2 +1,2 @@
 [ true* . (exists c:EmergencyCause. commEmergencyOccured(c)) .
-  (!stopMoving)* . commRWstatusNav(emergencyResolved) ] false
+  (!stopMoving)* . commRWstatusBoth(emergencyResolved) ] false

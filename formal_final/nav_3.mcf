@@ -7,9 +7,9 @@ forall r1, r2: Route.
       ||
       isButtonPressed(emergency)
       ||
-      commRWstatusNav(emergencyWeightTray)
+      commRWstatusBoth(emergencyWeightTray)
       ||
-      commRWstatusNav(emergencyWrongTray)
+      commRWstatusBoth(emergencyWrongTray)
    ))*.
  startMoving(r2)
 ]
