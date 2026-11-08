@@ -1,0 +1,7 @@
+forall t: Tray.
+[
+  true* . isTrayWeightReduced(t)
+]
+<
+  true* . commEmergencyOccured(reducedTrayWeight)
+> true

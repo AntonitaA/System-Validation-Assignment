@@ -1,3 +1,4 @@
-forall p: Position .
-  [true* . arrived(p)]
-  (mu X . ([!stopMoving] X && <true>true))
+nu X(r:Route = noRoute).
+     ( forall r1:Route. [ startMoving(r1) ] ( val(r == noRoute || r1 == r) && X(r1) ) )
+  && [ exists p:Position. arrived(p) ] X(noRoute)
+  && [ !( (exists r1:Route. startMoving(r1)) || (exists p:Position. arrived(p)) ) ] X(r)

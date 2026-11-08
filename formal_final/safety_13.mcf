@@ -1,2 +1,3 @@
-[ true* . (exists r:Route. startMoving(r)) . (!stopMoving)* .
-  (exists r2:Route. startMoving(r2)) ] false
+[ true* . commRWstatusBoth(emergencyResolved) .
+  (!( isButtonPressed(emergency) || exists c:EmergencyCause. commEmergencyOccured(c) ))* .
+  ( commRWstatusBoth(emergencyResolved) ) ] false

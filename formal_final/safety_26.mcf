@@ -1,7 +1,0 @@
-[true*.commRWstatusBoth(emergencyButtonActive)]
-[
-  (!commRWstatusBoth(emergencyResolved))*
-  .
-  (exists r: Route. startMoving(r))
-]
-false

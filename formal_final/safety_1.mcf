@@ -1,2 +1,1 @@
-[ true* . (exists r:Route. startMoving(r)) . (!stopMoving)* .
-  (exists q:Position. commTarget(q)) ] false
+forall p:Position. [ true* . arrived(p) . !stopMoving ] false

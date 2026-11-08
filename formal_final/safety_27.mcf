@@ -1,7 +1,0 @@
-[true*.commRWstatusBoth(emergencyWeightTray)]
-[
-  (!commRWstatusBoth(emergencyResolved))*
-  .
-  (exists r: Route. startMoving(r))
-]
-false

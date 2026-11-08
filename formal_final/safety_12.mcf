@@ -1,7 +1,9 @@
 forall t: Tray.
 [
-  true* . isTrayWeightReduced(t)
+  true* .
+  isWrongTrayUnloaded(t)
 ]
 <
-  true* . commEmergencyOccured(reducedTrayWeight)
+  true* .
+  commEmergencyOccured(wrongTrayPickedup)
 > true

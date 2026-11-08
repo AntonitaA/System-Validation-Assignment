@@ -1,7 +1,0 @@
-[ true* .
-  (exists s:RWstatus. val(s == emergencyButtonActive
-                          || s == emergencyWeightTray
-                          || s == emergencyWrongTray)
-                      && commRWstatusBoth(s)) .
-  (!commRWstatusBoth(emergencyResolved))* .
-  (exists r:Route. startMoving(r)) ] false

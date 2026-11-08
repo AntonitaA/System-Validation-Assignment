@@ -1,9 +1,0 @@
-forall t: Tray.
-[
-  true* .
-  isWrongTrayUnloaded(t)
-]
-<
-  true* .
-  commEmergencyOccured(wrongTrayPickedup)
-> true

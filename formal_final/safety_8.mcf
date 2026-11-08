@@ -1,2 +1,6 @@
-[ true* . (exists c:EmergencyCause. commEmergencyOccured(c)) .
-  (!stopMoving)* . commRWstatusBoth(emergencyResolved) ] false
+[ true* .
+  ( isButtonPressed(emergency)
+    || (exists t:Tray. isTrayWeightReduced(t))
+    || (exists t:Tray. isWrongTrayUnloaded(t)) ) .
+  (!( isButtonReleased(emergency) || commRWstatusBoth(emergencyResolved) ))* .
+  (exists r:Route. startMoving(r)) ] false

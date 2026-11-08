@@ -1,2 +1,3 @@
-[true*.(exists c: EmergencyCause. commEmergencyOccured(c))]
-<true*.commRWstatusBoth(emergencyResolved)> true
+forall c:EmergencyCause.
+  [ true* . commEmergencyOccured(c) ]
+    mu X. ( [ !commEmergencyResolved(c) ] X && <true> true )
