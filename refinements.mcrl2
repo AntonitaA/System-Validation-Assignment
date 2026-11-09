@@ -32,8 +32,7 @@ sort
 
     Button = struct
         emergency
-      | go
-      | service;
+      | go;
 
     ButtonStatus = struct
         pressed
@@ -170,7 +169,6 @@ act
 
     emergencyOccured;
     displayCollectMessage;
-    notifyService;
 
     % Navigation
     startMoving: Route;
@@ -796,20 +794,6 @@ proc TaskController(
             RWstatus
         )
 +
-    % Customer service.
-    isButtonPressed(service) .
-    notifyService .
-    TaskController(
-        light1,
-        light2,
-        order1,
-        order2,
-        tray1Status,
-        tray2Status,
-        position,
-        RWstatus
-    )
-+
     % All deliveries finished -> return to kitchen.
     (tray1Status == empty
      && tray2Status == empty
@@ -1165,7 +1149,6 @@ init
             isButtonPressed,
             isButtonReleased,
             displayCollectMessage,
-            notifyService,
             startMoving,
             stopMoving,
             arrived,
@@ -1190,10 +1173,8 @@ init
                     -> commEmergencyOccured,
                 sendEmergencyResolved | receiveEmergencyResolved
                     -> commEmergencyResolved,
-                % Atomic emergency press: Safety + Navigation + Task.
                 sendEmergencyPress | receiveEmergencyPressNav | receiveEmergencyPressTask
                     -> isButtonPressed,
-                % Atomic emergency release: Safety + Navigation + Task.
                 sendEmergencyRelease | receiveEmergencyReleaseNav | receiveEmergencyReleaseTask
                     -> isButtonReleased
             },
