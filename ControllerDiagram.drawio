@@ -1,0 +1,47 @@
+<mxfile host="mch">
+  <diagram id="controller-comm" name="Controller communication">
+    <mxGraphModel dx="1288" dy="903" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cont" parent="1" style="rounded=0;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;fillColor=#EDEDED;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="540" width="1280" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="safety" parent="cont" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;spacing=10;fontSize=12;fillColor=#F8CECC;strokeColor=#B85450;" value="&lt;b style=&quot;font-size:18px&quot;&gt;Safety Controller&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px;&quot;&gt;Supervises the emergency button, wrong-tray pick-ups and tray-weight reductions&lt;/span&gt;" vertex="1">
+          <mxGeometry height="110" width="1220" x="30" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="nav" parent="cont" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;spacing=10;fontSize=12;fillColor=#DAE8FC;strokeColor=#6C8EBF;" value="&lt;b style=&quot;font-size:18px&quot;&gt;Navigation Controller&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px;&quot;&gt;Controls the robot&#39;s movements and chooses the routes to be followed&lt;/span&gt;" vertex="1">
+          <mxGeometry height="180" width="440" x="30" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="task" parent="cont" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;spacing=10;fontSize=12;fillColor=#D5E8D4;strokeColor=#82B366;" value="&lt;b style=&quot;font-size:18px&quot;&gt;Task Controller&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px;&quot;&gt;Responsible for managing the trays and delivering the orders&lt;/span&gt;" vertex="1">
+          <mxGeometry height="180" width="440" x="810" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="e_safety_to_nav" edge="1" parent="cont" source="safety" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2F6DB5;fontSize=11;fontColor=#1F1F1F;edgeStyle=orthogonalEdgeStyle;rounded=0;labelBackgroundColor=#EDEDED;exitX=0.2787;exitY=1;exitDx=0;exitDy=0;entryX=0.7727;entryY=0;entryDx=0;entryDy=0;" target="nav" value="commRWstatusBoth(RWstatus)&lt;br&gt;isButtonPressed(emergency)&lt;br&gt;isButtonReleased(emergency)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_safety_to_task" edge="1" parent="cont" source="safety" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2F6DB5;fontSize=11;fontColor=#1F1F1F;edgeStyle=orthogonalEdgeStyle;rounded=0;labelBackgroundColor=#EDEDED;exitX=0.7213;exitY=1;exitDx=0;exitDy=0;entryX=0.2273;entryY=0;entryDx=0;entryDy=0;" target="task" value="commRWstatusBoth(RWstatus)&lt;br&gt;isButtonPressed(emergency)&lt;br&gt;isButtonReleased(emergency)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_task_to_safety" edge="1" parent="cont" source="task" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2F6DB5;fontSize=11;fontColor=#1F1F1F;edgeStyle=orthogonalEdgeStyle;rounded=0;labelBackgroundColor=#EDEDED;exitX=0.7727;exitY=0;exitDx=0;exitDy=0;entryX=0.918;entryY=1;entryDx=0;entryDy=0;" target="safety" value="commEmergencyOccured(EmergencyCause)&lt;br&gt;commEmergencyResolved(EmergencyCause)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_task_to_nav" edge="1" parent="cont" source="task" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2F6DB5;fontSize=11;fontColor=#1F1F1F;edgeStyle=orthogonalEdgeStyle;rounded=0;labelBackgroundColor=none;exitX=0;exitY=0.4;exitDx=0;exitDy=0;entryX=1;entryY=0.4;entryDx=0;entryDy=0;" target="nav" value="commTarget(Position)&lt;br&gt;commTrayStatus(Tray # TrayStatus)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-24" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_nav_to_task" edge="1" parent="cont" source="nav" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2F6DB5;fontSize=11;fontColor=#1F1F1F;edgeStyle=orthogonalEdgeStyle;rounded=0;labelBackgroundColor=none;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="task" value="commArrival(Position)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
